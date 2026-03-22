@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0f0c1a"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#6366f1"/>
+      <stop offset="50%"  stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="192" y1="0" x2="0" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#f43f5e" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.12"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="96" y1="24" x2="96" y2="168" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#6366f1"/>
+      <stop offset="40%"  stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="192" height="192" rx="42" fill="url(#bg)"/>
+
+  <!-- Subtle noise/texture feel via inner shadow -->
+  <rect width="192" height="192" rx="42" fill="none"
+    stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+  <!-- Glow orbs in background -->
+  <circle cx="48"  cy="48"  r="60" fill="rgba(99,102,241,0.06)"/>
+  <circle cx="144" cy="144" r="60" fill="rgba(6,182,212,0.05)"/>
+
+  <!-- Outer hexagon -->
+  <path d="M96 18 L162 54 L162 138 L96 174 L30 138 L30 54 Z"
+    fill="none" stroke="url(#g1)" stroke-width="2.5"
+    stroke-linejoin="round" opacity="0.8"/>
+
+  <!-- Inner hexagon filled -->
+  <path d="M96 40 L138 64 L138 128 L96 152 L54 128 L54 64 Z"
+    fill="url(#g2)"/>
+
+  <!-- Inner hexagon border -->
+  <path d="M96 40 L138 64 L138 128 L96 152 L54 128 L54 64 Z"
+    fill="none" stroke="url(#g1)" stroke-width="1" opacity="0.4"/>
+
+  <!-- Corner accent dots -->
+  <circle cx="96"  cy="18"  r="3" fill="url(#g1)" opacity="0.9"/>
+  <circle cx="162" cy="54"  r="3" fill="url(#g1)" opacity="0.7"/>
+  <circle cx="162" cy="138" r="3" fill="url(#g1)" opacity="0.7"/>
+  <circle cx="96"  cy="174" r="3" fill="url(#g1)" opacity="0.9"/>
+  <circle cx="30"  cy="138" r="3" fill="url(#g1)" opacity="0.7"/>
+  <circle cx="30"  cy="54"  r="3" fill="url(#g1)" opacity="0.7"/>
+
+  <!-- Lightning bolt — main -->
+  <path d="M108 44 L76 100 L96 100 L84 148 L120 90 L100 90 Z"
+    fill="url(#bolt)" filter="url(#glow)"/>
+
+  <!-- Lightning bolt — bright core -->
+  <path d="M108 44 L76 100 L96 100 L84 148 L120 90 L100 90 Z"
+    fill="white" opacity="0.15"/>
+</svg>

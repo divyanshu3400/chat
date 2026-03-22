@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+    <defs>
+        <linearGradient id="bg-main" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#0f0c1a" />
+            <stop offset="60%" stop-color="#07091a" />
+            <stop offset="100%" stop-color="#050810" />
+        </linearGradient>
+        <linearGradient id="g-accent" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#6366f1" />
+            <stop offset="45%" stop-color="#06b6d4" />
+            <stop offset="100%" stop-color="#10b981" />
+        </linearGradient>
+        <linearGradient id="g-fill" x1="512" y1="0" x2="0" y2="512" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.4" />
+            <stop offset="50%" stop-color="#6366f1" stop-opacity="0.15" />
+            <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.08" />
+        </linearGradient>
+        <linearGradient id="bolt-grad" x1="256" y1="64" x2="256" y2="448" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#818cf8" />
+            <stop offset="35%" stop-color="#6366f1" />
+            <stop offset="65%" stop-color="#06b6d4" />
+            <stop offset="100%" stop-color="#10b981" />
+        </linearGradient>
+        <linearGradient id="ring-top" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="#6366f1" />
+            <stop offset="100%" stop-color="#06b6d4" />
+        </linearGradient>
+
+        <!-- Glow filters -->
+        <filter id="f-glow-lg" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="10" result="b" />
+            <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="f-glow-md" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="5" result="b" />
+            <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="f-glow-sm" x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur stdDeviation="2.5" result="b" />
+            <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+        <filter id="f-orb" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="30" />
+        </filter>
+    </defs>
+
+    <!-- Background -->
+    <rect width="512" height="512" rx="112" fill="url(#bg-main)" />
+
+    <!-- Outer border -->
+    <rect width="512" height="512" rx="112" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+
+    <!-- Background glow orbs -->
+    <circle cx="128" cy="128" r="140" fill="rgba(99,102,241,0.07)" filter="url(#f-orb)" />
+    <circle cx="384" cy="384" r="140" fill="rgba(6,182,212,0.06)" filter="url(#f-orb)" />
+    <circle cx="400" cy="120" r="80" fill="rgba(16,185,129,0.04)" filter="url(#f-orb)" />
+
+    <!-- Outer hexagon ring (large, airy) -->
+    <path d="M256 48 L432 144 L432 368 L256 464 L80 368 L80 144 Z" fill="none" stroke="url(#g-accent)"
+        stroke-width="2.5" stroke-linejoin="round" opacity="0.65" />
+
+    <!-- Mid hexagon ring -->
+    <path d="M256 96 L390 172 L390 340 L256 416 L122 340 L122 172 Z" fill="none" stroke="url(#g-accent)"
+        stroke-width="1" stroke-linejoin="round" opacity="0.3" />
+
+    <!-- Inner hexagon — filled -->
+    <path d="M256 120 L368 183 L368 329 L256 392 L144 329 L144 183 Z" fill="url(#g-fill)" />
+
+    <!-- Inner hexagon — border -->
+    <path d="M256 120 L368 183 L368 329 L256 392 L144 329 L144 183 Z" fill="none" stroke="url(#g-accent)"
+        stroke-width="1.5" opacity="0.35" />
+
+    <!-- Vertex accent dots — outer hex -->
+    <circle cx="256" cy="48" r="5" fill="url(#g-accent)" opacity="0.9" filter="url(#f-glow-sm)" />
+    <circle cx="432" cy="144" r="5" fill="url(#g-accent)" opacity="0.7" filter="url(#f-glow-sm)" />
+    <circle cx="432" cy="368" r="5" fill="url(#g-accent)" opacity="0.7" filter="url(#f-glow-sm)" />
+    <circle cx="256" cy="464" r="5" fill="url(#g-accent)" opacity="0.9" filter="url(#f-glow-sm)" />
+    <circle cx="80" cy="368" r="5" fill="url(#g-accent)" opacity="0.7" filter="url(#f-glow-sm)" />
+    <circle cx="80" cy="144" r="5" fill="url(#g-accent)" opacity="0.7" filter="url(#f-glow-sm)" />
+
+    <!-- Decorative edge tick marks -->
+    <line x1="256" y1="48" x2="256" y2="62" stroke="url(#g-accent)" stroke-width="2" opacity="0.5" />
+    <line x1="432" y1="144" x2="420" y2="151" stroke="url(#g-accent)" stroke-width="2" opacity="0.4" />
+    <line x1="432" y1="368" x2="420" y2="361" stroke="url(#g-accent)" stroke-width="2" opacity="0.4" />
+    <line x1="256" y1="464" x2="256" y2="450" stroke="url(#g-accent)" stroke-width="2" opacity="0.5" />
+    <line x1="80" cy="368" x2="92" cy="361" stroke="url(#g-accent)" stroke-width="2" opacity="0.4" />
+    <line x1="80" cy="144" x2="92" cy="151" stroke="url(#g-accent)" stroke-width="2" opacity="0.4" />
+
+    <!-- Lightning bolt — glow layer (large, blurred) -->
+    <path d="M284 118 L196 268 L252 268 L224 394 L316 244 L260 244 Z" fill="url(#bolt-grad)" filter="url(#f-glow-lg)"
+        opacity="0.6" />
+
+    <!-- Lightning bolt — main shape -->
+    <path d="M284 118 L196 268 L252 268 L224 394 L316 244 L260 244 Z" fill="url(#bolt-grad)" filter="url(#f-glow-md)" />
+
+    <!-- Lightning bolt — bright inner highlight -->
+    <path d="M284 118 L196 268 L252 268 L224 394 L316 244 L260 244 Z" fill="white" opacity="0.12" />
+
+    <!-- Lightning bolt — sharp core edge highlight -->
+    <path d="M280 140 L210 256 L254 256 L228 368 L304 252 L260 252 Z" fill="white" opacity="0.06" />
+
+    <!-- Small sparkle dots around bolt tip -->
+    <circle cx="284" cy="114" r="3" fill="white" opacity="0.6" filter="url(#f-glow-sm)" />
+    <circle cx="296" cy="108" r="1.5" fill="rgba(99,102,241,0.9)" opacity="0.8" />
+    <circle cx="272" cy="108" r="2" fill="rgba(6,182,212,0.9)" opacity="0.7" />
+    <circle cx="224" cy="394" r="3" fill="white" opacity="0.5" filter="url(#f-glow-sm)" />
+    <circle cx="218" cy="402" r="1.5" fill="rgba(16,185,129,0.9)" opacity="0.7" />
+</svg>

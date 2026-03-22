@@ -1,0 +1,869 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   InputBar.module.css
+   Covers: InputBar root, EmojiPicker, VoiceRecordingUI, GifPanel,
+           PollBuilder, IBtn (icon button), AI chips, previews
+   Uses only CSS variables from globals.css — zero hardcoded colors.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Root wrapper ───────────────────────────────────────────────────── */
+.root {
+    padding: 10px 12px 14px;
+    border-top: 1px solid var(--bd);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    flex-shrink: 0;
+    position: relative;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+.rootDrag {
+    border-top-color: var(--ac);
+    background: var(--drag-bg, var(--ac-dim));
+}
+
+/* ─── Drag overlay hint ──────────────────────────────────────────────── */
+.dragOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ac);
+    font-family: var(--mono);
+    pointer-events: none;
+}
+
+/* ─── Edit mode banner ───────────────────────────────────────────────── */
+.editBanner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: var(--ac-edit-dim);
+    border: 1px solid var(--ac-edit-glow);
+    border-radius: var(--r);
+    animation: fadeInUp 0.2s ease;
+}
+
+.editBannerText {
+    flex: 1;
+    font-size: 12px;
+    color: var(--ac-edit);
+    font-family: var(--mono);
+}
+
+.editBannerKbd {
+    background: var(--s3);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--tx2);
+}
+
+.editBannerCancel {
+    background: none;
+    border: 1px solid var(--ac-edit-glow);
+    border-radius: 7px;
+    color: var(--ac-edit);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 3px 9px;
+    transition: background var(--transition);
+}
+
+.editBannerCancel:hover {
+    background: var(--ac-edit-dim);
+}
+
+/* ─── Reply preview ──────────────────────────────────────────────────── */
+.replyPreview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    border-left: 3px solid var(--ac);
+    border-radius: 0 var(--r) var(--r) 0;
+    animation: fadeInUp 0.2s ease;
+}
+
+.replyPreviewInner {
+    flex: 1;
+    min-width: 0;
+}
+
+.replyLabel {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--ac);
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.replyText {
+    font-size: 12px;
+    color: var(--tx2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dismissBtn {
+    background: none;
+    border: none;
+    color: var(--tx3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    transition: color var(--transition);
+    line-height: 1;
+}
+
+.dismissBtn:hover {
+    color: var(--tx);
+}
+
+/* ─── Attachment preview ─────────────────────────────────────────────── */
+.attPreview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    border-radius: var(--r);
+    animation: fadeInUp 0.2s ease;
+}
+
+.attThumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.attIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--s3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.attInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.attName {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tx);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attMeta {
+    font-size: 11px;
+    color: var(--tx3);
+    font-family: var(--mono);
+    margin-top: 2px;
+}
+
+.attRemove {
+    background: none;
+    border: 1px solid var(--bd);
+    border-radius: 7px;
+    color: var(--tx3);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 8px;
+    transition: all var(--transition);
+}
+
+.attRemove:hover {
+    border-color: var(--ac3);
+    color: var(--ac3);
+}
+
+/* ─── AI chips bar ───────────────────────────────────────────────────── */
+.aiChipsBar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    align-items: center;
+}
+
+.aiChipsBar::-webkit-scrollbar {
+    display: none;
+}
+
+.aiChipsLabel {
+    font-size: 11px;
+    color: var(--tx3);
+    font-family: var(--mono);
+    flex-shrink: 0;
+}
+
+.aiThinkingLabel {
+    font-size: 12px;
+    color: var(--ac);
+    font-family: var(--mono);
+    animation: fadeInUp 0.2s ease;
+}
+
+/* .input-chip is global (used in JSX className) — defined in globals.css */
+
+/* ─── Main input row ─────────────────────────────────────────────────── */
+.inputRow {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    position: relative;
+}
+
+/* ─── Textarea wrapper ───────────────────────────────────────────────── */
+.textareaWrap {
+    flex: 1;
+    position: relative;
+}
+
+.textarea {
+    width: 100%;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    color: var(--tx);
+    font-family: var(--font);
+    font-size: 14px;
+    padding: 10px 42px 10px 14px;
+    border-radius: 16px;
+    resize: none;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    min-height: 42px;
+    max-height: 130px;
+    line-height: 1.55;
+    display: block;
+}
+
+.textarea::placeholder {
+    color: var(--tx3);
+}
+
+.textarea:focus {
+    border-color: var(--ac);
+    box-shadow: 0 0 0 3px var(--ac-glow);
+}
+
+/* Edit mode textarea */
+.textareaEdit {
+    border-color: var(--ac-edit-glow);
+}
+
+.textareaEdit:focus {
+    border-color: var(--ac-edit);
+    box-shadow: 0 0 0 3px var(--ac-edit-dim);
+}
+
+/* Over character limit */
+.textareaOverLimit {
+    border-color: var(--ac3) !important;
+    box-shadow: 0 0 0 3px var(--ac3-dim) !important;
+}
+
+/* ─── Emoji toggle (inside textarea) ────────────────────────────────── */
+.emojiToggle {
+    position: absolute;
+    right: 8px;
+    bottom: 9px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px;
+    opacity: 0.45;
+    transition: opacity var(--transition);
+}
+
+.emojiToggle:hover,
+.emojiToggleActive {
+    opacity: 1;
+}
+
+/* ─── Character count ────────────────────────────────────────────────── */
+.charCount {
+    position: absolute;
+    right: 98px;
+    bottom: 2px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--tx3);
+    animation: fadeInUp 0.2s ease;
+    pointer-events: none;
+}
+
+.charCountWarn {
+    color: var(--ac5);
+}
+
+.charCountOver {
+    color: var(--ac3);
+}
+
+/* ─── Send button ────────────────────────────────────────────────────── */
+.sendBtn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: none;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--ac), var(--ac2));
+    color: #06080F;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px var(--ac-glow);
+    transition: all var(--transition);
+}
+
+.sendBtn:hover {
+    transform: scale(1.08);
+    opacity: 0.9;
+}
+
+.sendBtnEdit {
+    background: linear-gradient(135deg, var(--ac-edit), var(--ac2));
+    box-shadow: 0 4px 16px var(--ac-edit-glow);
+    color: #fff;
+}
+
+.sendBtnDisabled {
+    background: var(--s3);
+    color: var(--tx3);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+/* ─── Icon button (IBtn) ─────────────────────────────────────────────── */
+.iBtn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    border: 1px solid var(--bd);
+    background: var(--s2);
+    color: var(--tx2);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+}
+
+.iBtn:hover {
+    border-color: var(--ac);
+    color: var(--ac);
+    background: var(--ac-dim);
+}
+
+.iBtnActive {
+    border-color: var(--ac);
+    background: var(--ac-dim);
+    color: var(--ac);
+}
+
+.iBtnDanger {
+    border-color: var(--ac3-glow);
+    background: var(--ac3-dim);
+    color: var(--ac3);
+}
+
+.iBtnDanger:hover {
+    border-color: var(--ac3);
+    color: var(--ac3);
+    background: var(--ac3-dim);
+}
+
+/* ─── Desktop hint ───────────────────────────────────────────────────── */
+.hint {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+    opacity: 0.32;
+}
+
+.hintText {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--tx3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   EMOJI PICKER
+═══════════════════════════════════════════════════════════════════════ */
+.emojiPickerWrap {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    width: 320px;
+    max-width: 95vw;
+    background: var(--s1);
+    border: 1px solid var(--bd2);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    animation: panelUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 80;
+}
+
+.emojiSearch {
+    padding: 10px 12px 6px;
+    border-bottom: 1px solid var(--bd);
+}
+
+.emojiSearchInput {
+    width: 100%;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+    padding: 7px 12px;
+    color: var(--tx);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.emojiSearchInput:focus {
+    border-color: var(--ac);
+}
+
+.emojiSearchInput::placeholder {
+    color: var(--tx3);
+}
+
+.emojiCats {
+    display: flex;
+    padding: 6px 8px;
+    gap: 2px;
+    border-bottom: 1px solid var(--bd);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.emojiCats::-webkit-scrollbar {
+    display: none;
+}
+
+.emojiCatBtn {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.emojiCatBtn:hover {
+    background: var(--s3);
+}
+
+.emojiCatActive {
+    background: var(--ac-dim) !important;
+}
+
+.emojiGrid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.emojiBtn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.12s ease;
+    line-height: 1;
+}
+
+.emojiBtn:hover {
+    background: var(--s3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VOICE RECORDING UI
+═══════════════════════════════════════════════════════════════════════ */
+.voiceWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ac3-dim);
+    border: 1px solid var(--ac3-glow);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    animation: fadeInUp 0.2s ease;
+}
+
+.voiceMicBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ac3-dim);
+    border: 1px solid var(--ac3-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    /* recpulse is global keyframe — using animation with ac3 colors */
+    animation: recpulse 1s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.voiceWave {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 28px;
+    overflow: hidden;
+}
+
+.voiceBar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--ac3-glow);
+}
+
+.voiceTimer {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ac3);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.voiceCancelBtn {
+    background: none;
+    border: 1px solid var(--ac3-glow);
+    border-radius: 8px;
+    color: var(--ac3);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 4px 8px;
+    flex-shrink: 0;
+    transition: background var(--transition);
+}
+
+.voiceCancelBtn:hover {
+    background: var(--ac3-dim);
+}
+
+.voiceSendBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--ac3);
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform var(--transition);
+}
+
+.voiceSendBtn:hover {
+    transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   GIF PANEL
+═══════════════════════════════════════════════════════════════════════ */
+.gifWrap {
+    border: 1px solid var(--bd);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    background: var(--s1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    animation: slideDown 0.2s ease;
+}
+
+.gifHeader {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+}
+
+.gifSearchInput {
+    flex: 1;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    color: var(--tx);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.gifSearchInput:focus {
+    border-color: var(--ac);
+}
+
+.gifSearchInput::placeholder {
+    color: var(--tx3);
+}
+
+.gifCloseBtn {
+    background: none;
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    color: var(--tx3);
+    cursor: pointer;
+    padding: 0 10px;
+    font-size: 14px;
+    transition: all var(--transition);
+}
+
+.gifCloseBtn:hover {
+    border-color: var(--ac3);
+    color: var(--ac3);
+}
+
+.gifGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 0 8px 8px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.gifItem {
+    width: 100%;
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+    aspect-ratio: 1;
+    object-fit: cover;
+    transition: transform 0.15s ease;
+}
+
+.gifItem:hover {
+    transform: scale(1.05);
+}
+
+.gifSkeleton {
+    height: 80px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--s3) 25%, var(--glass3) 50%, var(--s3) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   POLL BUILDER
+═══════════════════════════════════════════════════════════════════════ */
+.pollWrap {
+    background: var(--s1);
+    border: 1px solid var(--bd);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 8px;
+    animation: slideDown 0.2s ease;
+}
+
+.pollHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.pollTitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tx);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pollCloseBtn {
+    background: none;
+    border: none;
+    color: var(--tx3);
+    cursor: pointer;
+    font-size: 16px;
+    transition: color var(--transition);
+    line-height: 1;
+}
+
+.pollCloseBtn:hover {
+    color: var(--tx);
+}
+
+.pollQuestionInput {
+    width: 100%;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    color: var(--tx);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 10px 13px;
+    border-radius: 10px;
+    outline: none;
+    margin-bottom: 8px;
+    transition: border-color var(--transition);
+}
+
+.pollQuestionInput:focus {
+    border-color: var(--ac);
+}
+
+.pollQuestionInput::placeholder {
+    color: var(--tx3);
+}
+
+.pollOptionRow {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+}
+
+.pollOptionNum {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--bd2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--tx3);
+    flex-shrink: 0;
+}
+
+.pollOptionInput {
+    flex: 1;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    color: var(--tx);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 9px;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.pollOptionInput:focus {
+    border-color: var(--ac);
+}
+
+.pollOptionInput::placeholder {
+    color: var(--tx3);
+}
+
+.pollRemoveBtn {
+    background: none;
+    border: none;
+    color: var(--tx3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    transition: color var(--transition);
+    line-height: 1;
+}
+
+.pollRemoveBtn:hover {
+    color: var(--ac3);
+}
+
+.pollAddBtn {
+    width: 100%;
+    padding: 8px;
+    border-radius: 9px;
+    background: transparent;
+    border: 1px dashed var(--bd2);
+    color: var(--tx3);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--mono);
+    margin-bottom: 10px;
+    transition: all var(--transition);
+}
+
+.pollAddBtn:hover {
+    border-color: var(--ac);
+    color: var(--ac);
+}
+
+.pollSendBtn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--ac), var(--ac2));
+    border: none;
+    color: #06080F;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    letter-spacing: 0.3px;
+}
+
+.pollSendBtn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.pollSendBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}

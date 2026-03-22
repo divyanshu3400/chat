@@ -1,0 +1,130 @@
+/* ═══════════════════════════════════════════════════════════
+   StatusBar.module.css
+   Extracts every inline style from StatusBar into BEM-style
+   module classes. Uses only global CSS variables (no hardcoded
+   values) so it inherits the Cipher v2.0 theme automatically.
+═══════════════════════════════════════════════════════════ */
+
+/* ── Root bar ── */
+.bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: var(--bg-void);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Left: brand ── */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brandName {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    font-weight: 500;
+}
+
+.brandTag {
+    font-size: 10px;
+    color: var(--tx-muted);
+    background: var(--accent-muted);
+    border: 1px solid var(--accent-glow);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+}
+
+/* ── Center: connection pulse ── */
+.center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dotWrap {
+    position: relative;
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+}
+
+.dotPing {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--green);
+    animation: ping 2s ease-out infinite;
+}
+
+.liveLabel {
+    font-size: 11px;
+    color: var(--tx-muted);
+    font-family: var(--font-mono);
+}
+
+/* ── Right: AI toggle button ── */
+.aiBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    padding: 2px 10px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    /* color/bg/border are set via modifier classes below */
+}
+
+.aiBtn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* active state  →  aiBtn + aiActive */
+.aiActive {
+    background: var(--accent-muted);
+    border: 1px solid var(--accent-glow);
+    color: var(--accent);
+}
+
+/* inactive state  →  aiBtn + aiInactive */
+.aiInactive {
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--tx-muted);
+}
+
+/* ── Keyframe: ping (locally scoped but also in globals) ── */
+@keyframes ping {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(2.4);
+        opacity: 0;
+    }
+}

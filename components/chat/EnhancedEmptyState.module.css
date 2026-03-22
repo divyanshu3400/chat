@@ -1,0 +1,501 @@
+/* EnhancedEmptyState.module.css */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes aiFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    33% {
+        transform: translateY(-12px) rotate(1.5deg);
+    }
+
+    66% {
+        transform: translateY(6px) rotate(-1.5deg);
+    }
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes dragHintSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes dragHandPulse {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(-15deg);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: translateX(12px) rotate(-15deg);
+        opacity: 1;
+    }
+}
+
+@keyframes fingerSlide {
+
+    0%,
+    10% {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    20%,
+    80% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    90%,
+    100% {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+}
+
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+}
+
+@keyframes dragIndicatorSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN CONTAINER
+═══════════════════════════════════════════════════════════════════════════ */
+
+.emptyState {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+    padding: 40px 24px;
+    background: linear-gradient(135deg,
+            rgba(11, 14, 26, 1) 0%,
+            rgba(15, 19, 32, 0.5) 50%,
+            rgba(11, 14, 26, 1) 100%);
+}
+
+.emptyState::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 40% 35%,
+            rgba(99, 102, 241, 0.08) 0%,
+            rgba(6, 182, 212, 0.04) 35%,
+            transparent 70%);
+    pointer-events: none;
+}
+
+.emptyState::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 65%,
+            rgba(16, 185, 129, 0.05) 0%,
+            transparent 60%);
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEURAL VISUALIZATION
+═══════════════════════════════════════════════════════════════════════════ */
+
+.emptyContent {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.neuralVisualization {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 32px;
+    animation: aiFloat 4s ease-in-out infinite;
+}
+
+.neuralIcon {
+    width: 100%;
+    height: 100%;
+}
+
+.glowRing {
+    position: absolute;
+    inset: -20px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 50%;
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HEADING & TEXT
+═══════════════════════════════════════════════════════════════════════════ */
+
+.emptyHeading {
+    text-align: center;
+    margin-bottom: 16px;
+    animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.emptyHeading h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--tx);
+    letter-spacing: -0.8px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    background: linear-gradient(135deg,
+            #f0f4ff 0%,
+            #a8b4d0 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.emptySubtext {
+    font-size: 14px;
+    color: var(--tx2);
+    line-height: 1.8;
+    max-width: 300px;
+    margin-bottom: 28px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALL-TO-ACTION BUTTONS
+═══════════════════════════════════════════════════════════════════════════ */
+
+.emptyCtas {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.ctaBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: -0.2px;
+}
+
+.ctaBtnPrimary {
+    background: linear-gradient(135deg, var(--ac), var(--ac2));
+    color: #06080f;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+}
+
+.ctaBtnPrimary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+}
+
+.ctaBtnSecondary {
+    background: var(--glass3);
+    border: 1px solid var(--border2);
+    color: var(--tx2);
+}
+
+.ctaBtnSecondary:hover {
+    border-color: var(--ac);
+    color: var(--ac);
+    background: var(--ac-dim);
+    transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEATURES GRID
+═══════════════════════════════════════════════════════════════════════════ */
+
+.featuresGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    margin-top: 20px;
+    animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+.featureCard {
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.featureCard:hover {
+    border-color: var(--ac);
+    background: var(--ac-dim);
+    transform: translateY(-2px);
+}
+
+.featureIcon {
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.featureName {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--tx2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--mono);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GESTURE HINT OVERLAY
+═══════════════════════════════════════════════════════════════════════════ */
+
+.gestureHintOverlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: auto;
+    z-index: 998;
+}
+
+.gestureHintOverlayDimmed {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.gestureHintContainer {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 999;
+    animation: dragHintSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gestureHintContainerFadeOut {
+    animation: fadeOutUp 0.3s ease forwards;
+}
+
+.handIcon {
+    font-size: 32px;
+    animation: dragHandPulse 1.2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.2));
+}
+
+.fingerLine {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 40px;
+    background: linear-gradient(to right,
+            rgba(99, 102, 241, 0.6),
+            rgba(6, 182, 212, 0));
+    animation: fingerSlide 1.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.gestureText {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg,
+            rgba(11, 14, 26, 0.92),
+            rgba(15, 19, 32, 0.88));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    animation: dragHintSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+    max-width: 140px;
+    text-align: center;
+    position: relative;
+}
+
+.gestureTextPrimary {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f0f4ff;
+    letter-spacing: -0.3px;
+    font-family: var(--font);
+}
+
+.gestureTextSecondary {
+    font-size: 10px;
+    color: #a8b4d0;
+    font-family: var(--mono);
+}
+
+.dismissBtn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #a8b4d0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.dismissBtn:hover {
+    background: rgba(0, 245, 255, 0.1);
+    border-color: rgba(0, 245, 255, 0.3);
+    color: #00f5ff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAG INDICATOR (Visual feedback)
+═══════════════════════════════════════════════════════════════════════════ */
+
+.dragIndicator {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60px;
+    background: linear-gradient(to right,
+            var(--ac),
+            rgba(0, 245, 255, 0));
+    border-radius: 0 2px 2px 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 199;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 0 12px var(--ac-glow);
+}
+
+.dragIndicatorActive {
+    opacity: 0.8;
+    animation: dragIndicatorSlide 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN
+═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+    .emptyState {
+        padding: 30px 16px;
+    }
+
+    .emptyHeading h1 {
+        font-size: 24px;
+    }
+
+    .featuresGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 769px) {
+    .gestureHintOverlay {
+        display: none !important;
+    }
+
+    .dragIndicator {
+        display: none !important;
+    }
+}
