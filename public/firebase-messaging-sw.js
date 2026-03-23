@@ -16,13 +16,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js')
 
 firebase.initializeApp({
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_PROJECT.firebaseapp.com',
-    databaseURL: 'https://YOUR_PROJECT-default-rtdb.firebaseio.com',
-    projectId: 'YOUR_PROJECT',
-    storageBucket: 'YOUR_PROJECT.appspot.com',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    appId: 'YOUR_APP_ID',
+    apiKey: 'AIzaSyDU4xR023so0FrIU47D_f4-9kSNbjYJNcg',
+    authDomain: 'rewardhub-35c65.firebaseapp.com',
+    databaseURL: 'https://rewardhub-35c65-default-rtdb.firebaseio.com',
+    projectId: 'rewardhub-35c65',
+    storageBucket: 'rewardhub-35c65.firebasestorage.app',
+    messagingSenderId: '158349317930',
+    appId: '1:158349317930:web:599786667032e443ac7053',
 })
 
 const messaging = firebase.messaging()

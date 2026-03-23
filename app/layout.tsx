@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
 
-  metadataBase: new URL('https://cipher.netlify.app'),
+  metadataBase: new URL('https://mcipherchat.netlify.app'),
 
   alternates: {
     canonical: '/',

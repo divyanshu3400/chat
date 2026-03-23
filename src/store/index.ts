@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   Conversation, Message, Story, Bookmark
-} from '@/types';
+} from '@/src/types';
 import { AccentColor, AppPrefs, CipherUser, ContextMenuState, ThemeMode } from '../types';
 
 // ─── Prefs Store ─────────────────────────────────────────────────────────────

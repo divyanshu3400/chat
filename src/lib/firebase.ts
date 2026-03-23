@@ -1,60 +1,71 @@
-import { FirebaseConfig } from '@/lib/firebase';
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getDatabase, Database } from 'firebase/database';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
+import { getDatabase } from 'firebase/database'
+import { getStorage } from 'firebase/storage'
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Database | null = null;
-let storage: FirebaseStorage | null = null;
+export interface FirebaseConfig {
+  apiKey: string
+  authDomain: string
+  databaseURL: string
+  projectId: string
+  storageBucket: string
+  messagingSenderId: string
+  appId: string
+  vapidKey?: string
+}
+
+let app: FirebaseApp | null = null
 
 export function initFirebase(config: FirebaseConfig) {
-  if (getApps().length > 0) {
-    app = getApps()[0];
+  if (!getApps().length) {
+    app = initializeApp(config)
   } else {
-    app = initializeApp(config);
+    app = getApps()[0]
   }
-  auth = getAuth(app);
-  db = getDatabase(app);
-  storage = getStorage(app);
-  return { app, auth, db, storage };
+  return app
 }
 
-export function getFirebaseInstances() {
-  return { app, auth, db, storage };
+export function getFirebaseApp() { return app }
+
+export function getFirebaseAuth() {
+  if (!app) throw new Error('Firebase not initialized')
+  return getAuth(app)
 }
 
-export function isFirebaseReady() {
-  return app !== null && auth !== null && db !== null;
+export function getFirebaseDB() {
+  if (!app) throw new Error('Firebase not initialized')
+  return getDatabase(app)
 }
 
-export const REPLACE_PREFIX = 'REPLACE_';
-
-export function isConfigured(config: Record<string, string>): boolean {
-  return !Object.values(config).some(v => v.startsWith(REPLACE_PREFIX));
+export function getFirebaseStorage() {
+  if (!app) throw new Error('Firebase not initialized')
+  return getStorage(app)
 }
 
-export function resolveConfig(): FirebaseConfig | null {
-  const defaults = {
-    apiKey:            'REPLACE_apiKey',
-    authDomain:        'REPLACE_authDomain',
-    databaseURL:       'REPLACE_databaseURL',
-    projectId:         'REPLACE_projectId',
-    storageBucket:     'REPLACE_storageBucket',
-    messagingSenderId: 'REPLACE_messagingSenderId',
-    appId:             'REPLACE_appId',
-  };
-
-  if (isConfigured(defaults)) return defaults as unknown as FirebaseConfig;
-
-  try {
-    const stored = localStorage.getItem('cipher_cfg');
-    if (stored) {
-      const c = JSON.parse(stored) as FirebaseConfig;
-      if (c?.apiKey) return c;
+export function resolveCfg(): FirebaseConfig | null {
+  // Check env vars first (for production)
+  if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+      !process.env.NEXT_PUBLIC_FIREBASE_API_KEY.startsWith('REPLACE_')) {
+    return {
+      apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
+      databaseURL:       process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ?? '',
+      projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+      storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
+      appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
+      vapidKey:          process.env.NEXT_PUBLIC_VAPID_KEY,
     }
-  } catch { /* ignore */ }
-
-  return null;
+  }
+  // Fallback to localStorage (setup screen flow)
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('cipher_cfg')
+      if (stored) {
+        const c = JSON.parse(stored)
+        if (c?.apiKey) return c
+      }
+    } catch {}
+  }
+  return null
 }
