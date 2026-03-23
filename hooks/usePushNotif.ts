@@ -23,14 +23,13 @@ import { CallData } from '@/types'
 /* ── Your VAPID public key from Firebase Console ──────────────────────
    Firebase Console → Project Settings → Cloud Messaging → Web Push certs
    Generate a key pair → copy the public key here                       */
-const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? ''
+const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_KEY ?? ''
 
 /* ═══════════════════════════════════════════════════════════════════════
    HOOK
 ═══════════════════════════════════════════════════════════════════════ */
 export function usePushNotif() {
-    const { showToast, conversations } = useStore()
-    const { setCallData, openConvCtx } = useCipherUIStore()
+    const { showToast } = useStore()
 
     /* ── Register service worker + get FCM token ─────────────────────── */
     const initPush = useCallback(async (uid: string) => {

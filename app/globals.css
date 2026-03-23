@@ -79,6 +79,12 @@
    --r2: 18px;
    --r3: 24px;
    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+   --bubble-mine-bg: #2563eb;
+   --bubble-mine-tx: #ffffff;
+   --bubble-theirs-bg: #1e2535;
+   --bubble-theirs-tx: #e2e6f0;
+   --ac-glow: rgba(37, 99, 235, 0.35);
+   --tick-read: #7dd3fc;
 }
 
 [data-accent="violet"] {

@@ -1,5 +1,5 @@
 import { Message } from '@/types'
-import { memo, useRef, useState } from 'react'
+import { memo, useRef, useState, useCallback } from 'react'
 import { AudioPlayer } from './AudioPlayer'
 import { PollBubble } from './PollBubble'
 import { fmtTime, mdRender } from '@/lib/utils'
@@ -7,19 +7,61 @@ import { ReactionRow } from './ReactionRow'
 import styles from './MessageBubble.module.css'
 
 const EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍', '👎', '🎉', '🔥', '🤯']
+const READ_MORE_THRESHOLD = 320 // chars before collapsing
 
 /* ═══════════════════════════════════════════════════════════════
-   TICKS  (read receipts)
+   TICKS
 ═══════════════════════════════════════════════════════════════ */
 const Ticks = memo(({ status }: { status?: string }) => {
     const cls =
         status === 'read' ? styles.tickRead :
             status === 'delivered' ? styles.tickDelivered :
                 styles.tickSent
-    const sym = status === 'sent' ? '✓' : '✓✓'
-    return <span className={`${styles.tick} ${cls}`}>{sym}</span>
+    return (
+        <span className={`${styles.tick} ${cls}`}>
+            {status === 'sent' ? (
+                <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                    <path d="M1 4.5L4.5 8L11 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            ) : (
+                <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
+                    <path d="M1 4.5L4.5 8L11 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M5 4.5L8.5 8L15 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            )}
+        </span>
+    )
 })
 Ticks.displayName = 'Ticks'
+
+/* ═══════════════════════════════════════════════════════════════
+   READ MORE WRAPPER
+═══════════════════════════════════════════════════════════════ */
+const ReadMoreText = memo(({ html, isMine }: { html: string; isMine: boolean }) => {
+    const isLong = html.replace(/<[^>]+>/g, '').length > READ_MORE_THRESHOLD
+    const [expanded, setExpanded] = useState(false)
+
+    return (
+        <div className={styles.readMoreRoot}>
+            <div
+                className={[
+                    styles.textContent,
+                    isLong && !expanded ? styles.textCollapsed : ''
+                ].join(' ')}
+                dangerouslySetInnerHTML={{ __html: html }}
+            />
+            {isLong && (
+                <button
+                    className={`${styles.readMoreBtn} ${isMine ? styles.readMoreBtnMine : styles.readMoreBtnTheirs}`}
+                    onClick={() => setExpanded(p => !p)}
+                >
+                    {expanded ? 'Show less ↑' : 'Read more ↓'}
+                </button>
+            )}
+        </div>
+    )
+})
+ReadMoreText.displayName = 'ReadMoreText'
 
 /* ═══════════════════════════════════════════════════════════════
    TYPES
@@ -55,24 +97,24 @@ export const MessageBubble = memo(({
 
     /* Touch long-press */
     const lpTimer = useRef<ReturnType<typeof setTimeout>>()
-    function onTouchStart(e: React.TouchEvent) {
+    const onTouchStart = useCallback((e: React.TouchEvent) => {
         lpTimer.current = setTimeout(() => {
             const t = e.touches[0]
             onCtx({ clientX: t.clientX, clientY: t.clientY }, id, msg, isMine, decryptedText)
-        }, 550)
-    }
-    function onTouchEnd() { clearTimeout(lpTimer.current) }
+        }, 500)
+    }, [id, msg, isMine, decryptedText, onCtx])
+    const onTouchEnd = useCallback(() => clearTimeout(lpTimer.current), [])
 
     /* Swipe-to-reply */
     const swipeAbs = Math.abs(swipeX)
     const swipeActive = swipeAbs > 12
 
     /* File download */
-    async function downloadFile() {
+    const downloadFile = useCallback(async () => {
         if (!msg.url) return
         setDlProgress(0)
         const res = await fetch(msg.url)
-        if (!res.ok || !res.body) { setDlProgress(null); throw new Error('Failed') }
+        if (!res.ok || !res.body) { setDlProgress(null); return }
         const total = Number(res.headers.get('content-length') ?? 0)
         const reader = res.body.getReader()
         const chunks: ArrayBuffer[] = []
@@ -91,63 +133,52 @@ export const MessageBubble = memo(({
         a.href = url; a.download = msg.fileName ?? 'file'; a.click()
         URL.revokeObjectURL(url)
         setDlProgress(null)
-    }
+    }, [msg.url, msg.fileName])
 
     /* ── DELETED ── */
     if (msg.deleted) {
         return (
-            <div
-                id={`mg_${id}`}
-                className={`${styles.deleted} ${isMine ? styles.deletedMine : styles.deletedTheirs}`}
-            >
-                <div className={styles.deletedBubble}>🚫 This message was deleted</div>
+            <div id={`mg_${id}`} className={`${styles.row} ${isMine ? styles.rowMine : styles.rowTheirs}`}
+                style={{ padding: '2px 12px' }}>
+                <div className={`${styles.deletedBubble} ${isMine ? styles.deletedMine : styles.deletedTheirs}`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                    </svg>
+                    <span>Message deleted</span>
+                </div>
             </div>
         )
     }
 
-    /* Bubble border-radius — tail on last, flush on grouped */
-    const r = 18
-    const rTail = 4
+    /* Bubble border-radius */
+    const r = 20
+    const rTail = 5
     const borderRadius = isMine
         ? `${r}px ${r}px ${isLast ? rTail : r}px ${r}px`
         : `${r}px ${r}px ${r}px ${isLast ? rTail : r}px`
 
     /* ── CONTENT ── */
-    function renderContent() {
+    const renderContent = useCallback(() => {
         switch (msg.type) {
-
             case 'image':
                 return (
-                    <div
-                        onClick={() => onLightbox(msg.url!, 'image')}
-                        className={styles.mediaWrap}
-                        style={{ maxWidth: 260 }}
-                    >
+                    <div onClick={() => onLightbox(msg.url!, 'image')} className={styles.mediaWrap}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={msg.url}
-                            alt="image"
-                            loading="lazy"
-                            className={styles.mediaImg}
-                        />
+                        <img src={msg.url} alt="" loading="lazy" className={styles.mediaImg} />
+                        <div className={styles.mediaSheen} />
                     </div>
                 )
 
             case 'video':
                 return (
-                    <div
-                        onClick={() => onLightbox(msg.url!, 'video')}
-                        className={styles.videoWrap}
-                    >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <video
-                            src={msg.url}
-                            muted
-                            playsInline
-                            className={styles.videoEl}
-                        />
+                    <div onClick={() => onLightbox(msg.url!, 'video')} className={styles.videoWrap}>
+                        <video src={msg.url} muted playsInline className={styles.videoEl} />
                         <div className={styles.videoOverlay}>
-                            <div className={styles.playBtn}>▶</div>
+                            <div className={styles.playBtn}>
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
                 )
@@ -157,13 +188,9 @@ export const MessageBubble = memo(({
 
             case 'gif':
                 return (
-                    <div
-                        onClick={() => onLightbox(msg.url!, 'image')}
-                        className={styles.mediaWrap}
-                        style={{ maxWidth: 240, position: 'relative' }}
-                    >
+                    <div onClick={() => onLightbox(msg.url!, 'image')} className={styles.mediaWrap} style={{ position: 'relative', maxWidth: 240 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={msg.url} alt="GIF" style={{ width: '100%', display: 'block' }} />
+                        <img src={msg.url} alt="GIF" style={{ width: '100%', display: 'block', borderRadius: 12 }} />
                         <div className={styles.gifBadge}>GIF</div>
                     </div>
                 )
@@ -171,23 +198,26 @@ export const MessageBubble = memo(({
             case 'file':
                 return (
                     <div className={styles.file}>
-                        <div className={isMine ? styles.fileIconMine : styles.fileIconTheirs}>📎</div>
+                        <div className={`${styles.fileIconWrap} ${isMine ? styles.fileIconMine : styles.fileIconTheirs}`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="22" height="22">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                        </div>
                         <div className={styles.fileInfo}>
                             <div className={styles.fileName}>{msg.fileName ?? 'file'}</div>
                             <div className={styles.fileMeta}>{msg.fileSize ?? ''}</div>
                             {dlProgress !== null ? (
-                                <div className={isMine ? styles.progressTrackMine : styles.progressTrackTheirs}>
-                                    <div
-                                        className={styles.progressFill}
-                                        style={{ width: `${dlProgress}%` }}
-                                    />
+                                <div className={styles.progressTrack}>
+                                    <div className={styles.progressFill} style={{ width: `${dlProgress}%` }} />
+                                    <span className={styles.progressLabel}>{dlProgress}%</span>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={downloadFile}
-                                    className={isMine ? styles.dlBtnMine : styles.dlBtnTheirs}
-                                >
-                                    ↓ Download
+                                <button onClick={downloadFile} className={`${styles.dlBtn} ${isMine ? styles.dlBtnMine : styles.dlBtnTheirs}`}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                                    </svg>
+                                    Download
                                 </button>
                             )}
                         </div>
@@ -197,22 +227,12 @@ export const MessageBubble = memo(({
             case 'poll':
                 return <PollBubble id={id} msg={msg} mine={isMine} cid={cid} />
 
-            case 'system':
-                return (
-                    <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--tx3)', padding: '4px 0', fontStyle: 'italic' }}>
-                        {msg.text}
-                    </div>
-                )
-
-            default: // text / markdown
-                return (
-                    <div
-                        className={styles.textContent}
-                        dangerouslySetInnerHTML={{ __html: decryptedText || mdRender(msg.text ?? '') }}
-                    />
-                )
+            default: {
+                const html = decryptedText || mdRender(msg.text ?? '')
+                return <ReadMoreText html={html} isMine={isMine} />
+            }
         }
-    }
+    }, [msg, isMine, cid, id, dlProgress, decryptedText, onLightbox, downloadFile])
 
     /* ── SYSTEM MESSAGE ── */
     if (msg.type === 'system') {
@@ -231,33 +251,29 @@ export const MessageBubble = memo(({
             id={`mg_${id}`}
             className={`${styles.row} ${isMine ? styles.rowMine : styles.rowTheirs}`}
             style={{
-                padding: `${isFirst ? 6 : 2}px 12px ${isLast ? 2 : 1}px`,
+                paddingTop: isFirst ? 6 : 2,
+                paddingBottom: isLast ? 4 : 1,
+                paddingInline: 10,
                 transform: swipeActive
                     ? `translateX(${isMine ? -swipeAbs * 0.35 : swipeAbs * 0.35}px)`
                     : 'none',
-                transition: swipeActive ? 'none' : 'transform 0.2s ease',
+                transition: swipeActive ? 'none' : 'transform 0.22s cubic-bezier(.4,0,.2,1)',
             }}
         >
-            {/* Group sender name */}
+            {/* Sender name in groups */}
             {isGroup && isFirst && !isMine && (
                 <div className={styles.senderName}>{msg.senderName}</div>
             )}
 
             <div className={`${styles.bubbleOuter} ${isMine ? styles.bubbleOuterMine : styles.bubbleOuterTheirs}`}>
 
-                {/* Avatar (group, others side) */}
+                {/* Avatar */}
                 {isGroup && !isMine && (
                     <div className={styles.avatarWrap}>
                         {isFirst ? (
                             msg.senderPhoto
-                                ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={msg.senderPhoto} alt="" className={styles.avatarImg} />
-                                ) : (
-                                    <div className={styles.avatarInitial}>
-                                        {(msg.senderName ?? '?')[0].toUpperCase()}
-                                    </div>
-                                )
+                                ? <img src={msg.senderPhoto} alt="" className={styles.avatarImg} /> // eslint-disable-line
+                                : <div className={styles.avatarInitial}>{(msg.senderName ?? '?')[0].toUpperCase()}</div>
                         ) : (
                             <div className={styles.avatarSpacer} />
                         )}
@@ -295,8 +311,8 @@ export const MessageBubble = memo(({
                     >
                         {renderContent()}
 
-                        {/* Footer — time + ticks (text/audio/file/poll only) */}
-                        {!isMediaType && isLast && (
+                        {/* Footer */}
+                        {!isMediaType && (
                             <div className={styles.footer}>
                                 {msg.edited && <span className={styles.footerEdited}>edited</span>}
                                 <span className={styles.footerTime}>{fmtTime(msg.ts as number)}</span>
@@ -304,7 +320,7 @@ export const MessageBubble = memo(({
                             </div>
                         )}
 
-                        {/* Media timestamp badge */}
+                        {/* Media badge */}
                         {isMediaType && (
                             <div className={styles.mediaBadge}>
                                 <span className={styles.mediaBadgeTime}>{fmtTime(msg.ts as number)}</span>
@@ -312,7 +328,7 @@ export const MessageBubble = memo(({
                             </div>
                         )}
 
-                        {/* Quick reaction picker (double-tap) */}
+                        {/* Emoji picker */}
                         {showPicker && (
                             <div className={`${styles.pickerWrap} ${isMine ? styles.pickerWrapMine : styles.pickerWrapTheirs}`}>
                                 {EMOJIS.map(e => (

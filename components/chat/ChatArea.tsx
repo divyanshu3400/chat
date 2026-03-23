@@ -606,8 +606,6 @@ export default function ChatArea({ cid, conv }: Props) {
           onSend={sendMsg}
           onFile={f => setAttachment(f, f.type.startsWith('image/') ? 'image' : 'file')}
           onVoice={sendVoice}
-          onGif={sendGif}
-          onPoll={sendPoll}
           onTyping={onTyping}
           editingText={editMsgId ? (decrypted[editMsgId] ?? '') : undefined}
           onCancelEdit={() => setEditMsgId(null)}

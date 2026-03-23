@@ -166,17 +166,98 @@ const GestureHint = memo(({ visible, phase, onDismiss }: GestureHintProps) => {
 
 GestureHint.displayName = 'GestureHint'
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-═══════════════════════════════════════════════════════════════════════════ */
 
+interface Props {
+    onNewChat: () => void
+    onNewGroup?: () => void
+    onSidebarOpen?: () => void
+    /** Show skeleton loader while conversations are being fetched */
+    loading?: boolean
+    /** Show error state with retry CTA */
+    error?: string
+    onRetry?: () => void
+}
+
+const ConvSkeleton = memo(() => (
+    <div className={styles.skeletonRow}>
+        <div className={styles.skeletonAvatar} />
+        <div className={styles.skeletonLines}>
+            <div className={styles.skeletonLine} style={{ width: '55%' }} />
+            <div className={styles.skeletonLine} style={{ width: '80%' }} />
+        </div>
+    </div>
+))
+ConvSkeleton.displayName = 'ConvSkeleton'
+
+const LoadingState = memo(() => (
+    <div className={styles.loadingState}>
+        {/* Spinner ring */}
+        <div className={styles.spinnerWrap}>
+            <div className={styles.spinnerRing} />
+            <div className={styles.spinnerCore}>
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 1.5H6L4.5 8H7.5L5.5 14.5L13 6.5H9.5L10 1.5Z"
+                        fill="var(--ac)" />
+                </svg>
+            </div>
+        </div>
+
+        <p className={styles.loadingLabel}>Loading conversations…</p>
+
+        {/* Skeleton rows */}
+        <div className={styles.skeletonList}>
+            <ConvSkeleton />
+            <ConvSkeleton />
+            <ConvSkeleton />
+        </div>
+    </div>
+))
+LoadingState.displayName = 'LoadingState'
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR STATE
+═══════════════════════════════════════════════════════════════ */
+const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+    <div className={styles.errorState}>
+        {/* Icon */}
+        <div className={styles.errorIcon}>
+            <svg width="32" height="32" viewBox="0 0 16 16" fill="none"
+                stroke="var(--ac3)" strokeWidth="1.4" strokeLinecap="round">
+                <circle cx="8" cy="8" r="6.5" />
+                <path d="M8 5v3.5" />
+                <circle cx="8" cy="11" r=".6" fill="var(--ac3)" stroke="none" />
+            </svg>
+        </div>
+
+        <h3 className={styles.errorTitle}>Couldn't load conversations</h3>
+        <p className={styles.errorMsg}>{message}</p>
+
+        {onRetry && (
+            <button className={styles.retryBtn} onClick={onRetry}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                    stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                    <path d="M2 8a6 6 0 0 1 6-6 6 6 0 0 1 5 2.7" />
+                    <path d="M14 8a6 6 0 0 1-6 6 6 6 0 0 1-5-2.7" />
+                    <path d="M13 4l1-2 1 2" />
+                    <path d="M3 12l-1 2-1-2" />
+                </svg>
+                Try again
+            </button>
+        )}
+    </div>
+))
+ErrorState.displayName = 'ErrorState'
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════════ */
 const EnhancedEmptyState = memo(
-    ({ onNewChat, onNewGroup, onSidebarOpen }: Props) => {
+    ({ onNewChat, onNewGroup, onSidebarOpen, loading, error, onRetry }: Props) => {
         const [dragProgress, setDragProgress] = useState(0)
         const [hintPhase, setHintPhase] = useState(0)
         const { showGestureHint, dismissHint } = useGestureHint()
 
-        // Neural network nodes
+        /* Neural network nodes */
         const nodes = [
             { cx: 50, cy: 50, r: 4, primary: true },
             { cx: 25, cy: 30, r: 2.5, primary: false },
@@ -192,21 +273,12 @@ const EnhancedEmptyState = memo(
             [1, 3], [2, 4], [3, 5], [4, 6],
         ]
 
-        // Gesture hint lifecycle
+        /* Gesture hint lifecycle */
         useEffect(() => {
-            if (!showGestureHint) {
-                setHintPhase(0)
-                return
-            }
-
+            if (!showGestureHint) { setHintPhase(0); return }
             setHintPhase(1)
-
-            // Auto-dismiss after 4.5 seconds
-            const timeout = setTimeout(() => {
-                setHintPhase(2)
-            }, 4500)
-
-            return () => clearTimeout(timeout)
+            const t = setTimeout(() => setHintPhase(2), 4500)
+            return () => clearTimeout(t)
         }, [showGestureHint])
 
         const handleHintDismiss = () => {
@@ -214,40 +286,46 @@ const EnhancedEmptyState = memo(
             setTimeout(dismissHint, 200)
         }
 
-        // Drag gesture detection
-        useDragGesture(true, {
+        /* Drag gesture — only active when idle (not loading/error) */
+        useDragGesture(!loading && !error, {
             threshold: 80,
-            onDragStart: () => {
-                // Visual feedback
-            },
-            onDragProgress: (progress) => {
-                setDragProgress(progress)
-            },
-            onDragEnd: () => {
-                setDragProgress(0)
-            },
-            onComplete: () => {
-                dismissHint()
-                onSidebarOpen?.()
-            },
+            onDragStart: () => { },
+            onDragProgress: (p) => setDragProgress(p),
+            onDragEnd: () => setDragProgress(0),
+            onComplete: () => { dismissHint(); onSidebarOpen?.() },
         })
 
+        /* ── LOADING ── */
+        if (loading) {
+            return (
+                <div className={styles.emptyState}>
+                    <LoadingState />
+                </div>
+            )
+        }
+
+        /* ── ERROR ── */
+        if (error) {
+            return (
+                <div className={styles.emptyState}>
+                    <ErrorState message={error} onRetry={onRetry} />
+                </div>
+            )
+        }
+
+        /* ── IDLE / EMPTY ── */
         return (
             <div className={styles.emptyState}>
+
                 {/* Drag indicator on left edge */}
                 <div
-                    className={`${styles.dragIndicator} ${dragProgress > 0 ? styles.dragIndicatorActive : ''
-                        }`}
-                    style={{
-                        opacity: dragProgress * 0.8,
-                    }}
+                    className={`${styles.dragIndicator} ${dragProgress > 0 ? styles.dragIndicatorActive : ''}`}
+                    style={{ opacity: dragProgress * 0.8 }}
                 />
 
                 {/* Neural visualization */}
                 <div className={styles.neuralVisualization}>
                     <NeuralNetworkViz nodes={nodes} edges={edges} />
-
-                    {/* Glow ring */}
                     <div className={styles.glowRing} />
                 </div>
 
@@ -284,26 +362,21 @@ const EnhancedEmptyState = memo(
 
                     {/* Features grid */}
                     <div className={styles.featuresGrid}>
-                        <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>🔐</div>
-                            <div className={styles.featureName}>E2E Encrypted</div>
-                        </div>
-                        <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>✦</div>
-                            <div className={styles.featureName}>AI Insights</div>
-                        </div>
-                        <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>⚡</div>
-                            <div className={styles.featureName}>Real-time</div>
-                        </div>
-                        <div className={styles.featureCard}>
-                            <div className={styles.featureIcon}>🌍</div>
-                            <div className={styles.featureName}>Global Network</div>
-                        </div>
+                        {[
+                            { icon: '🔐', name: 'E2E Encrypted' },
+                            { icon: '✦', name: 'AI Insights' },
+                            { icon: '⚡', name: 'Real-time' },
+                            { icon: '🌍', name: 'Global Network' },
+                        ].map(f => (
+                            <div key={f.name} className={styles.featureCard}>
+                                <div className={styles.featureIcon}>{f.icon}</div>
+                                <div className={styles.featureName}>{f.name}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Gesture Hint - Mobile Only */}
+                {/* Gesture Hint — mobile only */}
                 <GestureHint
                     visible={showGestureHint}
                     phase={hintPhase}
@@ -315,5 +388,4 @@ const EnhancedEmptyState = memo(
 )
 
 EnhancedEmptyState.displayName = 'EnhancedEmptyState'
-
 export default EnhancedEmptyState

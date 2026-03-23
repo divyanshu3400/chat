@@ -1,11 +1,17 @@
+/* StatusBar.module.css - RESPONSIVE VERSION
+   
+   Mobile-first design:
+   - Mobile (< 640px): Compact, single row, essential info only
+   - Tablet (640px - 1024px): Medium spacing
+   - Desktop (> 1024px): Full featured with all info
+   
+   Z-index: 100 (below FloatingCallWindow at 9998, above content)
+*/
+
 /* ═══════════════════════════════════════════════════════════
-   StatusBar.module.css
-   Extracts every inline style from StatusBar into BEM-style
-   module classes. Uses only global CSS variables (no hardcoded
-   values) so it inherits the Cipher v2.0 theme automatically.
+   ROOT BAR - Fixed at top
 ═══════════════════════════════════════════════════════════ */
 
-/* ── Root bar ── */
 .bar {
     position: fixed;
     top: 0;
@@ -17,42 +23,54 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 12px;
     z-index: 100;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 }
 
-/* ── Left: brand ── */
+/* ═══════════════════════════════════════════════════════════
+   LEFT: Brand Section
+═══════════════════════════════════════════════════════════ */
+
 .brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
+    flex-shrink: 0;
 }
 
 .brandName {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 10px;
     color: var(--accent);
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     font-weight: 500;
 }
 
 .brandTag {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--tx-muted);
     background: var(--accent-muted);
     border: 1px solid var(--accent-glow);
-    border-radius: 4px;
-    padding: 1px 6px;
+    border-radius: 3px;
+    padding: 1px 5px;
     font-family: var(--font-mono);
+    white-space: nowrap;
 }
 
-/* ── Center: connection pulse ── */
+/* ═══════════════════════════════════════════════════════════
+   CENTER: Connection Status
+═══════════════════════════════════════════════════════════ */
+
 .center {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
 }
 
 .dotWrap {
@@ -78,45 +96,76 @@
 }
 
 .liveLabel {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--tx-muted);
     font-family: var(--font-mono);
+    white-space: nowrap;
 }
 
-/* ── Right: AI toggle button ── */
+/* ═══════════════════════════════════════════════════════════
+   RIGHT: AI Button
+═══════════════════════════════════════════════════════════ */
+
 .aiBtn {
     display: flex;
     align-items: center;
-    gap: 6px;
-    border-radius: 6px;
-    padding: 2px 10px;
+    gap: 4px;
+    border-radius: 4px;
+    padding: 2px 8px;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 11px;
+    font-size: 9px;
     font-family: var(--font-mono);
-    /* color/bg/border are set via modifier classes below */
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.aiBtn:hover {
+    opacity: 0.8;
+}
+
+.aiBtn:active {
+    transform: scale(0.95);
 }
 
 .aiBtn:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline: 1px solid var(--accent);
+    outline-offset: 1px;
 }
 
-/* active state  →  aiBtn + aiActive */
+/* Button text - show/hide based on screen size */
+.aiText {
+    display: none;
+}
+
+/* Active state */
 .aiActive {
     background: var(--accent-muted);
     border: 1px solid var(--accent-glow);
     color: var(--accent);
 }
 
-/* inactive state  →  aiBtn + aiInactive */
+.aiActive:hover {
+    background: var(--accent);
+    color: var(--bg-void);
+}
+
+/* Inactive state */
 .aiInactive {
     background: transparent;
     border: 1px solid var(--border-dim);
     color: var(--tx-muted);
 }
 
-/* ── Keyframe: ping (locally scoped but also in globals) ── */
+.aiInactive:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+
 @keyframes ping {
     0% {
         transform: scale(1);
@@ -128,3 +177,163 @@
         opacity: 0;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: MOBILE (< 640px)
+═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 639px) {
+    .bar {
+        height: 36px;
+        padding: 0 8px;
+        gap: 4px;
+    }
+
+    .brand {
+        gap: 4px;
+    }
+
+    .brandName {
+        font-size: 9px;
+        letter-spacing: 0.1em;
+    }
+
+    /* Hide brand tag on mobile */
+    .brandTag {
+        display: none;
+    }
+
+    /* Hide center status on mobile to save space */
+    .center {
+        display: none;
+    }
+
+    /* Hide AI button text on mobile, show only icon */
+    .aiText {
+        display: none;
+    }
+
+    .aiBtn {
+        padding: 3px 6px;
+        gap: 3px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: TABLET (640px - 1023px)
+═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 640px) and (max-width: 1023px) {
+    .bar {
+        padding: 0 12px;
+    }
+
+    .brand {
+        gap: 6px;
+    }
+
+    .brandName {
+        font-size: 10px;
+    }
+
+    /* Show brand tag */
+    .brandTag {
+        display: inline-block;
+        font-size: 9px;
+    }
+
+    /* Show center status but make it smaller */
+    .center {
+        gap: 4px;
+    }
+
+    .liveLabel {
+        font-size: 9px;
+    }
+
+    /* Show AI button text */
+    .aiText {
+        display: inline;
+        font-size: 9px;
+    }
+
+    .aiBtn {
+        padding: 2px 8px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE: DESKTOP (> 1024px)
+═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+    .bar {
+        padding: 0 16px;
+    }
+
+    .brand {
+        gap: 8px;
+    }
+
+    .brandName {
+        font-size: 11px;
+        letter-spacing: 0.15em;
+    }
+
+    .brandTag {
+        font-size: 10px;
+        border-radius: 4px;
+        padding: 2px 6px;
+    }
+
+    .center {
+        gap: 6px;
+    }
+
+    .liveLabel {
+        font-size: 11px;
+    }
+
+    /* Show AI button text */
+    .aiText {
+        display: inline;
+        font-size: 11px;
+    }
+
+    .aiBtn {
+        padding: 3px 10px;
+        gap: 6px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBILITY
+═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    .dotPing {
+        animation: none;
+        opacity: 0.4;
+    }
+
+    .aiBtn {
+        transition: none;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .bar {
+        background: var(--bg-void);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OVERLAY WITH FLOATING CALL WINDOW
+   
+   z-index layering:
+   - Content: 0
+   - StatusBar: 100 (below call window)
+   - FloatingCallWindow: 9998 (above status bar)
+   - Modal/Overlay: 10000+ (if needed)
+═══════════════════════════════════════════════════════════ */
+

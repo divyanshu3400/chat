@@ -1,147 +1,149 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   InputBar.module.css
-   Covers: InputBar root, EmojiPicker, VoiceRecordingUI, GifPanel,
-           PollBuilder, IBtn (icon button), AI chips, previews
-   Uses only CSS variables from globals.css — zero hardcoded colors.
-═══════════════════════════════════════════════════════════════════════ */
-
-/* ─── Root wrapper ───────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════
+   ROOT
+═══════════════════════════════════════════════════ */
 .root {
-    padding: 10px 12px 14px;
-    border-top: 1px solid var(--bd);
-    background: var(--input-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    flex-shrink: 0;
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --danger: #ef4444;
+    --success: #10b981;
+    --btn: 36px;
+
     position: relative;
-    transition: border-color var(--transition), background var(--transition);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
 }
 
 .rootDrag {
-    border-top-color: var(--ac);
-    background: var(--drag-bg, var(--ac-dim));
+    border-top-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
-/* ─── Drag overlay hint ──────────────────────────────────────────────── */
 .dragOverlay {
     position: absolute;
     inset: 0;
-    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
     font-size: 14px;
-    color: var(--ac);
-    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--accent);
     pointer-events: none;
+    z-index: 10;
 }
 
-/* ─── Edit mode banner ───────────────────────────────────────────────── */
+/* ─── edit banner ─── */
 .editBanner {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    background: var(--ac-edit-dim);
-    border: 1px solid var(--ac-edit-glow);
-    border-radius: var(--r);
-    animation: fadeInUp 0.2s ease;
-}
-
-.editBannerText {
-    flex: 1;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 10px;
     font-size: 12px;
-    color: var(--ac-edit);
-    font-family: var(--mono);
+    color: var(--accent);
 }
 
-.editBannerKbd {
-    background: var(--s3);
+.editText {
+    flex: 1;
+}
+
+.editKbd {
+    display: inline-block;
     padding: 1px 5px;
+    background: rgba(255, 255, 255, .1);
     border-radius: 4px;
-    font-size: 10px;
-    color: var(--tx2);
-}
-
-.editBannerCancel {
-    background: none;
-    border: 1px solid var(--ac-edit-glow);
-    border-radius: 7px;
-    color: var(--ac-edit);
-    cursor: pointer;
+    font-family: monospace;
     font-size: 11px;
-    font-family: var(--mono);
-    padding: 3px 9px;
-    transition: background var(--transition);
 }
 
-.editBannerCancel:hover {
-    background: var(--ac-edit-dim);
+.editCancel {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: background .15s;
 }
 
-/* ─── Reply preview ──────────────────────────────────────────────────── */
+.editCancel:hover {
+    background: rgba(255, 255, 255, .08);
+}
+
+/* ─── reply preview ─── */
 .replyPreview {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    border-left: 3px solid var(--ac);
-    border-radius: 0 var(--r) var(--r) 0;
-    animation: fadeInUp 0.2s ease;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    background: var(--surface);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.replyPreviewInner {
+.replyBar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+.replyInner {
     flex: 1;
     min-width: 0;
 }
 
-.replyLabel {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--ac);
-    font-weight: 700;
+.replyName {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
     margin-bottom: 2px;
 }
 
 .replyText {
     font-size: 12px;
-    color: var(--tx2);
+    color: var(--muted);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .dismissBtn {
     background: none;
     border: none;
-    color: var(--tx3);
+    color: var(--muted);
     cursor: pointer;
-    font-size: 16px;
-    padding: 2px 4px;
-    transition: color var(--transition);
-    line-height: 1;
+    font-size: 14px;
+    padding: 0 2px;
+    align-self: center;
+    transition: color .15s;
 }
 
 .dismissBtn:hover {
-    color: var(--tx);
+    color: var(--text);
 }
 
-/* ─── Attachment preview ─────────────────────────────────────────────── */
+/* ─── attachment preview ─── */
 .attPreview {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    border-radius: var(--r);
-    animation: fadeInUp 0.2s ease;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    background: var(--surface);
+    border-radius: 12px;
 }
 
 .attThumb {
@@ -152,11 +154,11 @@
     flex-shrink: 0;
 }
 
-.attIcon {
+.attIconBox {
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    background: var(--s3);
+    background: rgba(255, 255, 255, .06);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -170,388 +172,270 @@
 }
 
 .attName {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--tx);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .attMeta {
     font-size: 11px;
-    color: var(--tx3);
-    font-family: var(--mono);
+    color: var(--muted);
     margin-top: 2px;
 }
 
 .attRemove {
     background: none;
-    border: 1px solid var(--bd);
-    border-radius: 7px;
-    color: var(--tx3);
+    border: none;
+    color: var(--muted);
     cursor: pointer;
-    font-size: 13px;
-    padding: 4px 8px;
-    transition: all var(--transition);
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background .15s, color .15s;
 }
 
 .attRemove:hover {
-    border-color: var(--ac3);
-    color: var(--ac3);
+    background: rgba(255, 255, 255, .08);
+    color: var(--danger);
 }
 
-/* ─── AI chips bar ───────────────────────────────────────────────────── */
-.aiChipsBar {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-    align-items: center;
+/* ─── desktop emoji panel ─── */
+.emojiPanel {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+    padding: 8px;
+    margin-bottom: 4px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
 }
 
-.aiChipsBar::-webkit-scrollbar {
-    display: none;
+.emojiCell {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 5px;
+    border-radius: 6px;
+    transition: background .12s, transform .1s;
+    text-align: center;
 }
 
-.aiChipsLabel {
-    font-size: 11px;
-    color: var(--tx3);
-    font-family: var(--mono);
-    flex-shrink: 0;
+.emojiCell:hover {
+    background: rgba(255, 255, 255, .08);
+    transform: scale(1.2);
 }
 
-.aiThinkingLabel {
-    font-size: 12px;
-    color: var(--ac);
-    font-family: var(--mono);
-    animation: fadeInUp 0.2s ease;
-}
-
-/* .input-chip is global (used in JSX className) — defined in globals.css */
-
-/* ─── Main input row ─────────────────────────────────────────────────── */
+/* ─── input row ─── */
 .inputRow {
     display: flex;
-    gap: 6px;
     align-items: flex-end;
-    position: relative;
+    gap: 3px;
 }
 
-/* ─── Textarea wrapper ───────────────────────────────────────────────── */
+/* ─── icon buttons ─── */
+.iBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--btn);
+    height: var(--btn);
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background .15s, color .15s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+}
+
+.iBtn:hover {
+    background: rgba(255, 255, 255, .07);
+    color: var(--text);
+}
+
+.iBtn:active {
+    transform: scale(0.88);
+}
+
+.iBtnActive {
+    color: var(--accent) !important;
+}
+
+/* ─── textarea ─── */
 .textareaWrap {
     flex: 1;
-    position: relative;
+    min-width: 0;
 }
 
 .textarea {
     width: 100%;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    color: var(--tx);
-    font-family: var(--font);
-    font-size: 14px;
-    padding: 10px 42px 10px 14px;
-    border-radius: 16px;
     resize: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text);
+    /* 16px prevents iOS Safari auto-zoom on focus */
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 9px 14px;
     outline: none;
-    transition: border-color var(--transition), box-shadow var(--transition);
-    min-height: 42px;
-    max-height: 130px;
-    line-height: 1.55;
-    display: block;
+    font-family: inherit;
+    transition: border-color .2s;
+}
+
+@media (min-width: 640px) {
+    .textarea {
+        font-size: 15px;
+    }
 }
 
 .textarea::placeholder {
-    color: var(--tx3);
+    color: var(--muted);
 }
 
 .textarea:focus {
-    border-color: var(--ac);
-    box-shadow: 0 0 0 3px var(--ac-glow);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
-/* Edit mode textarea */
 .textareaEdit {
-    border-color: var(--ac-edit-glow);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
 }
 
-.textareaEdit:focus {
-    border-color: var(--ac-edit);
-    box-shadow: 0 0 0 3px var(--ac-edit-dim);
+.textareaOver {
+    border-color: color-mix(in srgb, var(--danger) 60%, transparent) !important;
 }
 
-/* Over character limit */
-.textareaOverLimit {
-    border-color: var(--ac3) !important;
-    box-shadow: 0 0 0 3px var(--ac3-dim) !important;
-}
-
-/* ─── Emoji toggle (inside textarea) ────────────────────────────────── */
-.emojiToggle {
-    position: absolute;
-    right: 8px;
-    bottom: 9px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    padding: 2px;
-    opacity: 0.45;
-    transition: opacity var(--transition);
-}
-
-.emojiToggle:hover,
-.emojiToggleActive {
-    opacity: 1;
-}
-
-/* ─── Character count ────────────────────────────────────────────────── */
+/* ─── char count ─── */
 .charCount {
-    position: absolute;
-    right: 98px;
-    bottom: 2px;
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--tx3);
-    animation: fadeInUp 0.2s ease;
-    pointer-events: none;
+    font-size: 11px;
+    font-weight: 600;
+    width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 9px;
 }
 
-.charCountWarn {
-    color: var(--ac5);
+.charWarn {
+    color: #f59e0b;
 }
 
-.charCountOver {
-    color: var(--ac3);
+.charOver {
+    color: var(--danger);
 }
 
-/* ─── Send button ────────────────────────────────────────────────────── */
+/* ─── send button ─── */
 .sendBtn {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    border: none;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--ac), var(--ac2));
-    color: #06080F;
-    cursor: pointer;
-    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 16px var(--ac-glow);
-    transition: all var(--transition);
-}
-
-.sendBtn:hover {
-    transform: scale(1.08);
-    opacity: 0.9;
-}
-
-.sendBtnEdit {
-    background: linear-gradient(135deg, var(--ac-edit), var(--ac2));
-    box-shadow: 0 4px 16px var(--ac-edit-glow);
-    color: #fff;
-}
-
-.sendBtnDisabled {
-    background: var(--s3);
-    color: var(--tx3);
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none !important;
-    opacity: 1 !important;
-}
-
-/* ─── Icon button (IBtn) ─────────────────────────────────────────────── */
-.iBtn {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+    width: var(--btn);
+    height: var(--btn);
     flex-shrink: 0;
-    border: 1px solid var(--bd);
-    background: var(--s2);
-    color: var(--tx2);
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition);
-}
-
-.iBtn:hover {
-    border-color: var(--ac);
-    color: var(--ac);
-    background: var(--ac-dim);
-}
-
-.iBtnActive {
-    border-color: var(--ac);
-    background: var(--ac-dim);
-    color: var(--ac);
-}
-
-.iBtnDanger {
-    border-color: var(--ac3-glow);
-    background: var(--ac3-dim);
-    color: var(--ac3);
-}
-
-.iBtnDanger:hover {
-    border-color: var(--ac3);
-    color: var(--ac3);
-    background: var(--ac3-dim);
-}
-
-/* ─── Desktop hint ───────────────────────────────────────────────────── */
-.hint {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 4px;
-    opacity: 0.32;
-}
-
-.hintText {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--tx3);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   EMOJI PICKER
-═══════════════════════════════════════════════════════════════════════ */
-.emojiPickerWrap {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    width: 320px;
-    max-width: 95vw;
-    background: var(--s1);
-    border: 1px solid var(--bd2);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    animation: panelUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 80;
-}
-
-.emojiSearch {
-    padding: 10px 12px 6px;
-    border-bottom: 1px solid var(--bd);
-}
-
-.emojiSearchInput {
-    width: 100%;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    border-radius: 10px;
-    padding: 7px 12px;
-    color: var(--tx);
-    font-family: var(--mono);
-    font-size: 12px;
-    outline: none;
-    transition: border-color var(--transition);
-}
-
-.emojiSearchInput:focus {
-    border-color: var(--ac);
-}
-
-.emojiSearchInput::placeholder {
-    color: var(--tx3);
-}
-
-.emojiCats {
-    display: flex;
-    padding: 6px 8px;
-    gap: 2px;
-    border-bottom: 1px solid var(--bd);
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.emojiCats::-webkit-scrollbar {
-    display: none;
-}
-
-.emojiCatBtn {
-    flex-shrink: 0;
-    padding: 4px 8px;
-    border-radius: 8px;
     border: none;
-    background: none;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background var(--transition);
-}
-
-.emojiCatBtn:hover {
-    background: var(--s3);
-}
-
-.emojiCatActive {
-    background: var(--ac-dim) !important;
-}
-
-.emojiGrid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    padding: 8px;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.emojiBtn {
-    background: none;
-    border: none;
-    font-size: 22px;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 8px;
-    transition: background 0.12s ease;
-    line-height: 1;
-}
-
-.emojiBtn:hover {
-    background: var(--s3);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   VOICE RECORDING UI
-═══════════════════════════════════════════════════════════════════════ */
-.voiceWrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--ac3-dim);
-    border: 1px solid var(--ac3-glow);
-    border-radius: 14px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-    animation: fadeInUp 0.2s ease;
-}
-
-.voiceMicBtn {
-    width: 36px;
-    height: 36px;
     border-radius: 50%;
-    background: var(--ac3-dim);
-    border: 1px solid var(--ac3-glow);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s, transform .1s, opacity .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sendBtn:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.sendBtn:active:not(:disabled) {
+    transform: scale(0.88);
+}
+
+.sendEdit {
+    background: var(--success) !important;
+}
+
+.sendEdit:hover:not(:disabled) {
+    background: #059669 !important;
+}
+
+.sendDisabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ─── hint (desktop only) ─── */
+.hint {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 3px 0 1px;
+    user-select: none;
+}
+
+/* ══════════════════════════════════════════════════
+   VOICE BAR
+══════════════════════════════════════════════════ */
+.voiceBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
+}
+
+.voiceCancel {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    /* recpulse is global keyframe — using animation with ac3 colors */
-    animation: recpulse 1s ease-in-out infinite;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .06);
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
     flex-shrink: 0;
+    transition: background .15s;
+}
+
+.voiceCancel:hover {
+    background: rgba(239, 68, 68, .15);
+}
+
+.voiceDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    flex-shrink: 0;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: 0
+    }
+}
+
+.voiceTime {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 36px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
 }
 
 .voiceWave {
@@ -563,307 +447,84 @@
     overflow: hidden;
 }
 
-.voiceBar {
-    width: 3px;
+.waveBar {
+    flex: 1;
+    min-width: 2px;
+    max-width: 3px;
     border-radius: 2px;
-    background: var(--ac3-glow);
+    background: var(--accent);
+    animation: wave 1.2s ease-in-out infinite;
 }
 
-.voiceTimer {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--ac3);
-    font-weight: 600;
-    flex-shrink: 0;
+@keyframes wave {
+
+    0%,
+    100% {
+        height: 4px;
+        opacity: .4
+    }
+
+    50% {
+        height: 20px;
+        opacity: 1
+    }
 }
 
-.voiceCancelBtn {
-    background: none;
-    border: 1px solid var(--ac3-glow);
-    border-radius: 8px;
-    color: var(--ac3);
-    cursor: pointer;
-    font-size: 11px;
-    font-family: var(--mono);
-    padding: 4px 8px;
-    flex-shrink: 0;
-    transition: background var(--transition);
-}
-
-.voiceCancelBtn:hover {
-    background: var(--ac3-dim);
-}
-
-.voiceSendBtn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+.voiceSend {
+    padding: 0 14px;
+    height: 34px;
+    border-radius: 17px;
+    background: var(--accent);
     border: none;
-    background: var(--ac3);
     color: #fff;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex-shrink: 0;
-    transition: transform var(--transition);
+    transition: background .15s, transform .1s;
 }
 
-.voiceSendBtn:hover {
-    transform: scale(1.1);
+.voiceSend:hover {
+    background: #2563eb;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   GIF PANEL
-═══════════════════════════════════════════════════════════════════════ */
-.gifWrap {
-    border: 1px solid var(--bd);
-    border-radius: 18px;
-    overflow: hidden;
-    margin-bottom: 8px;
-    background: var(--s1);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    animation: slideDown 0.2s ease;
+.voiceSend:active {
+    transform: scale(0.94);
 }
 
-.gifHeader {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
+/* ══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+@media (max-width: 639px) {
+    .root {
+        padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+    }
+
+    .iBtn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .sendBtn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .inputRow {
+        gap: 2px;
+    }
+
+    .emojiPanel {
+        grid-template-columns: repeat(8, 1fr);
+    }
 }
 
-.gifSearchInput {
-    flex: 1;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    color: var(--tx);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    outline: none;
-    transition: border-color var(--transition);
-}
+@media (min-width: 640px) {
+    .root {
+        padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    }
 
-.gifSearchInput:focus {
-    border-color: var(--ac);
-}
-
-.gifSearchInput::placeholder {
-    color: var(--tx3);
-}
-
-.gifCloseBtn {
-    background: none;
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    color: var(--tx3);
-    cursor: pointer;
-    padding: 0 10px;
-    font-size: 14px;
-    transition: all var(--transition);
-}
-
-.gifCloseBtn:hover {
-    border-color: var(--ac3);
-    color: var(--ac3);
-}
-
-.gifGrid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    padding: 0 8px 8px;
-    max-height: 180px;
-    overflow-y: auto;
-}
-
-.gifItem {
-    width: 100%;
-    border-radius: 8px;
-    cursor: pointer;
-    display: block;
-    aspect-ratio: 1;
-    object-fit: cover;
-    transition: transform 0.15s ease;
-}
-
-.gifItem:hover {
-    transform: scale(1.05);
-}
-
-.gifSkeleton {
-    height: 80px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, var(--s3) 25%, var(--glass3) 50%, var(--s3) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   POLL BUILDER
-═══════════════════════════════════════════════════════════════════════ */
-.pollWrap {
-    background: var(--s1);
-    border: 1px solid var(--bd);
-    border-radius: 18px;
-    padding: 16px;
-    margin-bottom: 8px;
-    animation: slideDown 0.2s ease;
-}
-
-.pollHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.pollTitle {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--tx);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.pollCloseBtn {
-    background: none;
-    border: none;
-    color: var(--tx3);
-    cursor: pointer;
-    font-size: 16px;
-    transition: color var(--transition);
-    line-height: 1;
-}
-
-.pollCloseBtn:hover {
-    color: var(--tx);
-}
-
-.pollQuestionInput {
-    width: 100%;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    color: var(--tx);
-    font-family: var(--font);
-    font-size: 13px;
-    padding: 10px 13px;
-    border-radius: 10px;
-    outline: none;
-    margin-bottom: 8px;
-    transition: border-color var(--transition);
-}
-
-.pollQuestionInput:focus {
-    border-color: var(--ac);
-}
-
-.pollQuestionInput::placeholder {
-    color: var(--tx3);
-}
-
-.pollOptionRow {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 6px;
-    align-items: center;
-}
-
-.pollOptionNum {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1px solid var(--bd2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--tx3);
-    flex-shrink: 0;
-}
-
-.pollOptionInput {
-    flex: 1;
-    background: var(--s2);
-    border: 1px solid var(--bd);
-    color: var(--tx);
-    font-family: var(--font);
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: 9px;
-    outline: none;
-    transition: border-color var(--transition);
-}
-
-.pollOptionInput:focus {
-    border-color: var(--ac);
-}
-
-.pollOptionInput::placeholder {
-    color: var(--tx3);
-}
-
-.pollRemoveBtn {
-    background: none;
-    border: none;
-    color: var(--tx3);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0 4px;
-    transition: color var(--transition);
-    line-height: 1;
-}
-
-.pollRemoveBtn:hover {
-    color: var(--ac3);
-}
-
-.pollAddBtn {
-    width: 100%;
-    padding: 8px;
-    border-radius: 9px;
-    background: transparent;
-    border: 1px dashed var(--bd2);
-    color: var(--tx3);
-    cursor: pointer;
-    font-size: 12px;
-    font-family: var(--mono);
-    margin-bottom: 10px;
-    transition: all var(--transition);
-}
-
-.pollAddBtn:hover {
-    border-color: var(--ac);
-    color: var(--ac);
-}
-
-.pollSendBtn {
-    width: 100%;
-    padding: 11px;
-    border-radius: 11px;
-    background: linear-gradient(135deg, var(--ac), var(--ac2));
-    border: none;
-    color: #06080F;
-    font-family: var(--font);
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all var(--transition);
-    letter-spacing: 0.3px;
-}
-
-.pollSendBtn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-.pollSendBtn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    transform: none;
+    .inputRow {
+        gap: 5px;
+    }
 }

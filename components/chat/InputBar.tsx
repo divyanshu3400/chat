@@ -1,411 +1,290 @@
 'use client'
 
-/**
- * InputBar — Production-grade mobile-first message input
- * Styling: InputBar.module.css + globals.css tokens
- * Zero hardcoded colors — everything via CSS variables.
- */
-
-import {
-  useRef, useState, useEffect, useCallback,
-  useMemo, memo, type KeyboardEvent, type DragEvent,
-  type ClipboardEvent
+import React, {
+  useState, useRef, useEffect, useCallback,
+  KeyboardEvent, ClipboardEvent, DragEvent,
 } from 'react'
-import { useStore } from '@/lib/store'
+import { createPortal } from 'react-dom'
 import styles from './InputBar.module.css'
 
-/* ═══════════════════════════════════════════════════════════════
-   TYPES
-═══════════════════════════════════════════════════════════════ */
+/* ─── constants ─── */
+const MAX_CHARS = 4000
+const WARN_CHARS = 3800
+
+/* ─── types ─── */
+interface ReplyTo { senderName: string; text: string }
 interface Props {
   onSend: (text: string) => void
   onFile: (file: File) => void
   onVoice: (blob: Blob, duration: string) => void
-  onGif: (url: string) => void
-  onPoll: (question: string, options: string[]) => void
+  onGif?: (url: string) => void
+  onPoll?: () => void
   onTyping?: () => void
   editingText?: string
   onCancelEdit?: () => void
+  replyTo?: ReplyTo | null
+  onClearReply?: () => void
 }
 
-interface EmojiCategory { name: string; icon: string; emojis: string[] }
-
-/* ═══════════════════════════════════════════════════════════════
-   CONSTANTS
-═══════════════════════════════════════════════════════════════ */
-const GIPHY_KEY = 'dc6zaTOxFJmzC'
-const CLAUDE_API = 'https://api.anthropic.com/v1/messages'
-const MAX_CHARS = 4000
-const WARN_CHARS = 800
-
-const AI_PROMPTS: Record<string, string> = {
-  'Summarize': 'Summarize this in 2 sentences: ',
-  'Fix grammar': 'Fix the grammar and spelling of: ',
-  'Translate EN': 'Translate to English: ',
-  'Make shorter': 'Make this more concise: ',
-  'Make formal': 'Rewrite this in a formal tone: ',
-  'Make casual': 'Rewrite this in a casual friendly tone: ',
+/* ─── SSR-safe mobile detection ─── */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const check = () =>
+      setMobile(
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        window.innerWidth < 640
+      )
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return mobile
 }
 
-const EMOJI_CATEGORIES: EmojiCategory[] = [
-  { name: 'Smileys', icon: '😊', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '😘', '😗', '😙', '😚', '☺️', '🥲', '😋', '😛', '😜', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐'] },
-  { name: 'Gestures', icon: '👋', emojis: ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤙', '🤘', '🤟', '👈', '👉', '👆', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '🫶', '🤲', '🙏', '✍️', '💪', '🦾', '🫵', '🫱', '🫲'] },
-  { name: 'Hearts', icon: '❤️', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☯️', '♾️', '💢', '💥', '💫', '💦', '💨', '🕳️', '💬', '💭', '🗯️', '💤'] },
-  { name: 'Animals', icon: '🐶', emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐔', '🐧', '🐦', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔'] },
-  { name: 'Food', icon: '🍎', emojis: ['🍎', '🍊', '🍋', '🍇', '🍓', '🫐', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🫒', '🥑', '🍆', '🥦', '🧄', '🧅', '🌽', '🌶️', '🫑', '🥕', '🫚', '🫛', '🧆', '🥐', '🍞', '🥖', '🥨', '🧀', '🥚', '🧈', '🥞', '🧇', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯'] },
-  { name: 'Travel', icon: '🚀', emojis: ['🚀', '✈️', '🛸', '🚁', '🛶', '⛵', '🚂', '🚗', '🏎️', '🚕', '🚙', '🛻', '🚌', '🏍️', '🛵', '🚲', '🛴', '🛺', '🚦', '🗺️', '🗼', '🗽', '🏰', '🏯', '🏟️', '🛕', '⛪', '🕌', '🛖', '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏭', '🗿', '🏔️', '🌋'] },
-  { name: 'Objects', icon: '💡', emojis: ['💡', '🔦', '🕯️', '🪔', '🧱', '💎', '🔑', '🗝️', '🔒', '🔓', '🪤', '🧲', '⚙️', '🔧', '🔨', '🪛', '🔩', '🪜', '🧰', '🪝', '💊', '🩺', '🩻', '🩹', '🩼', '💉', '🩸', '🏷️', '🔖', '📎', '🖇️', '📌', '📍', '✂️', '🗃️', '🗄️', '📦', '📫', '📬', '📭', '📮', '📯'] },
-  { name: 'Symbols', icon: '⭐', emojis: ['⭐', '🌟', '💥', '🔥', '🌈', '⚡', '❄️', '🌊', '🎆', '🎇', '✨', '🎉', '🎊', '🎈', '🎁', '🎀', '🪄', '🎯', '🎮', '🎲', '♟️', '🧩', '🪅', '🎭', '🖼️', '🎨', '🎪', '🎟️', '🎫', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🎗️'] },
-]
+const fmt = (s: number) =>
+  `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
 
-/* ═══════════════════════════════════════════════════════════════
-   EMOJI PICKER
-═══════════════════════════════════════════════════════════════ */
-const RECENT_KEY = 'cipher_recent_emoji'
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM SHEET  — Portal onto document.body
+   Slide-up animation exactly like Android BottomSheetDialog
+══════════════════════════════════════════════════════════════ */
+interface SheetAction {
+  icon: React.ReactNode
+  label: string
+  bg: string
+  onClick: () => void
+}
 
-const EmojiPicker = memo(({ onPick }: { onPick: (e: string) => void; onClose: () => void }) => {
-  const [catIdx, setCatIdx] = useState(0)
-  const [search, setSearch] = useState('')
-  const [recent, setRecent] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] }
-  })
+function BottomSheet({
+  open, onClose, actions,
+}: { open: boolean; onClose: () => void; actions: SheetAction[] }) {
+  // Two-phase state: "mounted" keeps DOM alive during close animation
+  const [mounted, setMounted] = useState(false)
+  const [animIn, setAnimIn] = useState(false)
 
-  function pick(emoji: string) {
-    onPick(emoji)
-    const updated = [emoji, ...recent.filter(e => e !== emoji)].slice(0, 30)
-    setRecent(updated)
-    localStorage.setItem(RECENT_KEY, JSON.stringify(updated))
-  }
+  useEffect(() => { setMounted(true) }, [])
 
-  const filtered = useMemo(() => {
-    if (!search) return null
-    return EMOJI_CATEGORIES.flatMap(c => c.emojis).slice(0, 48)
-  }, [search])
+  useEffect(() => {
+    if (open) {
+      setMounted(true)
+      // next tick so CSS transition fires
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimIn(true)))
+      document.body.style.overflow = 'hidden'
+    } else {
+      setAnimIn(false)
+      document.body.style.overflow = ''
+      const t = setTimeout(() => setMounted(false), 320)
+      return () => clearTimeout(t)
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
-  const display = search
-    ? (filtered ?? [])
-    : catIdx === -1
-      ? recent
-      : (EMOJI_CATEGORIES[catIdx]?.emojis ?? [])
+  if (!mounted || typeof document === 'undefined') return null
 
-  return (
-    <div className={styles.emojiPickerWrap}>
-      <div className={styles.emojiSearch}>
-        <input
-          autoFocus
-          placeholder="🔍 Search emoji…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className={styles.emojiSearchInput}
-        />
-      </div>
-
-      {!search && (
-        <div className={styles.emojiCats}>
-          {recent.length > 0 && (
-            <button
-              onClick={() => setCatIdx(-1)}
-              className={`${styles.emojiCatBtn} ${catIdx === -1 ? styles.emojiCatActive : ''}`}
-              title="Recent"
-            >🕐</button>
-          )}
-          {EMOJI_CATEGORIES.map((cat, i) => (
-            <button
-              key={cat.name}
-              onClick={() => setCatIdx(i)}
-              title={cat.name}
-              className={`${styles.emojiCatBtn} ${catIdx === i ? styles.emojiCatActive : ''}`}
-            >{cat.icon}</button>
-          ))}
-        </div>
-      )}
-
-      <div className={styles.emojiGrid}>
-        {display.map((emoji, i) => (
-          <button
-            key={`${emoji}_${i}`}
-            onClick={() => pick(emoji)}
-            className={styles.emojiBtn}
-          >{emoji}</button>
-        ))}
-      </div>
-    </div>
-  )
-})
-EmojiPicker.displayName = 'EmojiPicker'
-
-/* ═══════════════════════════════════════════════════════════════
-   VOICE RECORDING UI
-═══════════════════════════════════════════════════════════════ */
-const VoiceRecordingUI = memo(({ elapsed, onStop, onCancel }:
-  { elapsed: number; onStop: () => void; onCancel: () => void }
-) => {
-  const bars = 24
-  const s = elapsed % 60
-  const m = Math.floor(elapsed / 60)
-  const dur = `${m}:${s.toString().padStart(2, '0')}`
-
-  return (
-    <div className={styles.voiceWrap}>
-      <div className={styles.voiceMicBtn}>🎙️</div>
-
-      <div className={styles.voiceWave}>
-        {Array.from({ length: bars }, (_, i) => (
-          <div
-            key={i}
-            className={styles.voiceBar}
-            style={{
-              height: `${20 + Math.sin(Date.now() / 200 + i) * 12}px`,
-              animationDelay: `${i * 40}ms`,
-            }}
-          />
-        ))}
-      </div>
-
-      <span className={styles.voiceTimer}>{dur}</span>
-
-      <button onClick={onCancel} className={styles.voiceCancelBtn}>
-        Cancel
-      </button>
-
-      <button
-        onClick={onStop}
-        title="Send voice message"
-        className={styles.voiceSendBtn}
-      >↑</button>
-    </div>
-  )
-})
-VoiceRecordingUI.displayName = 'VoiceRecordingUI'
-
-/* ═══════════════════════════════════════════════════════════════
-   GIF PANEL
-═══════════════════════════════════════════════════════════════ */
-const GifPanel = memo(({ onPick, onClose }: { onPick: (url: string) => void; onClose: () => void }) => {
-  const [query, setQuery] = useState('')
-  const [gifs, setGifs] = useState<{ url: string; preview: string }[]>([])
-  const [loading, setLoading] = useState(false)
-  const [trending, setTrending] = useState(true)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
-
-  async function load(q: string) {
-    setLoading(true)
-    try {
-      const endpoint = q
-        ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=15&rating=g`
-        : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=15&rating=g`
-      const res = await fetch(endpoint)
-      const data = await res.json()
-      setGifs((data.data ?? []).map((g: any) => ({
-        url: g.images.downsized.url,
-        preview: g.images.fixed_width_small.url,
-      })))
-    } catch { /* ignore */ }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { load('') }, [])
-
-  function onSearch(q: string) {
-    setQuery(q)
-    clearTimeout(timerRef.current)
-    setTrending(!q)
-    timerRef.current = setTimeout(() => load(q), 400)
-  }
-
-  return (
-    <div className={styles.gifWrap}>
-      <div className={styles.gifHeader}>
-        <input
-          autoFocus
-          placeholder={`🔍 ${trending ? 'Trending GIFs' : 'Search GIFs'}…`}
-          value={query}
-          onChange={e => onSearch(e.target.value)}
-          className={styles.gifSearchInput}
-        />
-        <button onClick={onClose} className={styles.gifCloseBtn}>✕</button>
-      </div>
-
-      <div className={styles.gifGrid}>
-        {loading
-          ? Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className={styles.gifSkeleton} />
-          ))
-          : gifs.map((g, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={g.preview}
-              alt=""
-              loading="lazy"
-              onClick={() => { onPick(g.url); onClose() }}
-              className={styles.gifItem}
-            />
-          ))
-        }
-      </div>
-    </div>
-  )
-})
-GifPanel.displayName = 'GifPanel'
-
-/* ═══════════════════════════════════════════════════════════════
-   POLL BUILDER
-═══════════════════════════════════════════════════════════════ */
-const PollBuilder = memo(({ onSend, onClose }: {
-  onSend: (q: string, opts: string[]) => void
-  onClose: () => void
-}) => {
-  const [question, setQuestion] = useState('')
-  const [options, setOptions] = useState(['', ''])
-  const optRefs = useRef<(HTMLInputElement | null)[]>([])
-
-  function setOpt(i: number, val: string) {
-    setOptions(prev => { const o = [...prev]; o[i] = val; return o })
-  }
-  function addOpt() {
-    if (options.length >= 8) return
-    setOptions(prev => [...prev, ''])
-    setTimeout(() => optRefs.current[options.length]?.focus(), 60)
-  }
-  function removeOpt(i: number) {
-    if (options.length <= 2) return
-    setOptions(prev => prev.filter((_, idx) => idx !== i))
-  }
-  function handleSend() {
-    const q = question.trim()
-    const opts = options.map(o => o.trim()).filter(Boolean)
-    if (!q || opts.length < 2) return
-    onSend(q, opts)
-    onClose()
-  }
-
-  const canSendPoll = question.trim() && options.filter(o => o.trim()).length >= 2
-
-  return (
-    <div className={styles.pollWrap}>
-      <div className={styles.pollHeader}>
-        <div className={styles.pollTitle}>📊 Create Poll</div>
-        <button onClick={onClose} className={styles.pollCloseBtn}>✕</button>
-      </div>
-
-      <input
-        autoFocus
-        placeholder="Ask a question…"
-        value={question}
-        onChange={e => setQuestion(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') optRefs.current[0]?.focus() }}
-        className={styles.pollQuestionInput}
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        pointerEvents: animIn ? 'auto' : 'none',
+      }}
+    >
+      {/* Scrim */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          transition: 'opacity 0.28s ease',
+          opacity: animIn ? 1 : 0,
+        }}
       />
 
-      {options.map((opt, i) => (
-        <div key={i} className={styles.pollOptionRow}>
-          <div className={styles.pollOptionNum}>{i + 1}</div>
-          <input
-            ref={el => { optRefs.current[i] = el }}
-            placeholder={i < 2 ? `Option ${i + 1} (required)` : `Option ${i + 1}`}
-            value={opt}
-            onChange={e => setOpt(i, e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                if (i === options.length - 1) addOpt()
-                else optRefs.current[i + 1]?.focus()
-              }
-            }}
-            className={styles.pollOptionInput}
-          />
-          {options.length > 2 && (
-            <button onClick={() => removeOpt(i)} className={styles.pollRemoveBtn}>✕</button>
-          )}
-        </div>
-      ))}
-
-      {options.length < 8 && (
-        <button onClick={addOpt} className={styles.pollAddBtn}>
-          ＋ Add option {options.length < 8 ? `(${8 - options.length} remaining)` : ''}
-        </button>
-      )}
-
-      <button
-        onClick={handleSend}
-        disabled={!canSendPoll}
-        className={styles.pollSendBtn}
+      {/* Sheet card */}
+      <div
+        style={{
+          position: 'relative',
+          background: '#1e2537',
+          borderRadius: '20px 20px 0 0',
+          padding: '0 0 max(20px, env(safe-area-inset-bottom))',
+          transform: animIn ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+        }}
       >
-        Send Poll
-      </button>
-    </div>
-  )
-})
-PollBuilder.displayName = 'PollBuilder'
+        {/* Handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 4px' }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.22)' }} />
+        </div>
 
-/* ═══════════════════════════════════════════════════════════════
-   AI COMMAND HANDLER
-═══════════════════════════════════════════════════════════════ */
-async function callClaude(prompt: string): Promise<string> {
-  try {
-    const res = await fetch(CLAUDE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
-    const data = await res.json()
-    return data.content?.[0]?.text ?? 'No response.'
-  } catch {
-    return 'AI request failed. Check network.'
-  }
+        {/* Title */}
+        <p style={{
+          margin: '4px 0 14px',
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'rgba(255,255,255,.5)',
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
+        }}>
+          Add to message
+        </p>
+
+        {/* Action grid — 4 cols */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 10,
+          padding: '0 16px 16px',
+        }}>
+          {actions.map(({ icon, label, bg, onClick }) => (
+            <button
+              key={label}
+              onClick={() => { onClick(); onClose() }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                padding: '16px 8px 12px',
+                background: 'rgba(255,255,255,.04)',
+                border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 16,
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                transition: 'transform 0.12s, background 0.12s',
+              }}
+              onPointerDown={e => {
+                ; (e.currentTarget as HTMLElement).style.transform = 'scale(0.91)'
+                  ; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'
+              }}
+              onPointerUp={e => {
+                ; (e.currentTarget as HTMLElement).style.transform = ''
+                  ; (e.currentTarget as HTMLElement).style.background = ''
+              }}
+              onPointerLeave={e => {
+                ; (e.currentTarget as HTMLElement).style.transform = ''
+                  ; (e.currentTarget as HTMLElement).style.background = ''
+              }}
+            >
+              {/* Icon circle */}
+              <span style={{
+                width: 52,
+                height: 52,
+                borderRadius: '50%',
+                background: bg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: 22,
+              }}>
+                {icon}
+              </span>
+              <span style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,.6)',
+                fontWeight: 500,
+                textAlign: 'center',
+                lineHeight: 1.2,
+              }}>
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Cancel pill */}
+        <div style={{ padding: '0 16px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: 'rgba(255,255,255,.06)',
+              border: '1px solid rgba(255,255,255,.09)',
+              borderRadius: 14,
+              color: 'rgba(255,255,255,.7)',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ICON BUTTON  (IBtn)
-═══════════════════════════════════════════════════════════════ */
-const IBtn = memo(({ icon, onClick, active, title, danger }: {
-  icon: React.ReactNode
-  onClick: () => void
-  active?: boolean
-  title?: string
-  danger?: boolean
-}) => {
-  const cls = [
-    styles.iBtn,
-    active && !danger ? styles.iBtnActive : '',
-    danger ? styles.iBtnDanger : '',
-  ].filter(Boolean).join(' ')
-
+/* ─── Small icon button ─── */
+function IBtn({ icon, onClick, title, active, disabled }: {
+  icon: React.ReactNode; onClick: () => void
+  title?: string; active?: boolean; disabled?: boolean
+}) {
   return (
-    <button onClick={onClick} title={title} className={cls}>
+    <button onClick={onClick} title={title} disabled={disabled} className={[
+      styles.iBtn, active ? styles.iBtnActive : '',
+    ].filter(Boolean).join(' ')}>
       {icon}
     </button>
   )
-})
-IBtn.displayName = 'IBtn'
+}
 
-/* ═══════════════════════════════════════════════════════════════
+/* ─── Voice recording bar ─── */
+function VoiceBar({ elapsed, onStop, onCancel }: {
+  elapsed: number; onStop: () => void; onCancel: () => void
+}) {
+  return (
+    <div className={styles.voiceBar}>
+      <button onClick={onCancel} className={styles.voiceCancel}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+      </button>
+      <span className={styles.voiceDot} />
+      <span className={styles.voiceTime}>{fmt(elapsed)}</span>
+      <div className={styles.voiceWave}>
+        {Array.from({ length: 18 }).map((_, i) => (
+          <span key={i} className={styles.waveBar} style={{ animationDelay: `${i * 65}ms` }} />
+        ))}
+      </div>
+      <button onClick={onStop} className={styles.voiceSend}>Send ↑</button>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════
    MAIN INPUT BAR
-═══════════════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 export default function InputBar({
   onSend, onFile, onVoice, onGif, onPoll,
   onTyping, editingText, onCancelEdit,
+  replyTo, onClearReply,
 }: Props) {
-  const { replyTo, setReplyTo, attFile, attType, setAttachment } = useStore()
+  const mobile = useIsMobile()
 
   const [text, setText] = useState('')
-  const [gifOpen, setGifOpen] = useState(false)
-  const [pollOpen, setPollOpen] = useState(false)
-  const [emojiOpen, setEmojiOpen] = useState(false)
   const [isRec, setIsRec] = useState(false)
   const [recElapsed, setRecElapsed] = useState(0)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiChips, setAiChips] = useState<string[]>([])
-  const [dragOver, setDragOver] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const [attFile, setAttFile] = useState<File | null>(null)
   const [attPreview, setAttPreview] = useState<string | null>(null)
+  const [attType, setAttType] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const recStartRef = useRef(0)
@@ -414,7 +293,6 @@ export default function InputBar({
 
   const isEditing = editingText !== undefined
 
-  /* ── PRE-FILL EDIT MODE ── */
   useEffect(() => {
     if (editingText !== undefined) {
       setText(editingText)
@@ -422,7 +300,6 @@ export default function InputBar({
     }
   }, [editingText])
 
-  /* ── ATTACHMENT PREVIEW ── */
   useEffect(() => {
     if (attFile && attType === 'image') {
       const url = URL.createObjectURL(attFile)
@@ -432,364 +309,228 @@ export default function InputBar({
     setAttPreview(null)
   }, [attFile, attType])
 
-  /* ── AUTO-RESIZE ── */
   function autoResize() {
-    const el = textareaRef.current
-    if (!el) return
+    const el = textareaRef.current; if (!el) return
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 130) + 'px'
   }
 
-  /* ── TYPING INDICATOR ── */
   const fireTyping = useCallback(() => {
-    onTyping?.()
-    clearTimeout(typTimerRef.current)
+    onTyping?.(); clearTimeout(typTimerRef.current)
   }, [onTyping])
 
-  /* ── /ai COMMAND ── */
-  function checkAiCommand(val: string) {
-    setAiChips(val === '/ai' || val.startsWith('/ai ') ? Object.keys(AI_PROMPTS) : [])
+  function attachFile(file: File) {
+    const type = file.type.startsWith('image/') ? 'image'
+      : file.type.startsWith('video/') ? 'video' : 'file'
+    setAttFile(file); setAttType(type); onFile(file)
   }
 
-  async function applyAiChip(chip: string) {
-    const userText = text.replace(/^\/ai\s*/, '').trim()
-    const prompt = AI_PROMPTS[chip] + (userText || '…')
-    setAiLoading(true)
-    setAiChips([])
-    const result = await callClaude(prompt)
-    setText(result)
-    setAiLoading(false)
-    setTimeout(autoResize, 50)
-    textareaRef.current?.focus()
-  }
-
-  /* ── SEND ── */
   function handleSend() {
     const t = text.trim()
     if (!t && !attFile) return
     try { navigator.vibrate?.(10) } catch { }
     onSend(t)
-    setText('')
-    setReplyTo(null)
-    setAttachment(null, null)
-    setAiChips([])
-    setEmojiOpen(false)
+    setText(''); setAttFile(null); setAttPreview(null); setAttType(null); setEmojiOpen(false)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
-  /* ── KEYBOARD ── */
   function handleKey(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
-    if (e.key === 'Escape') {
-      if (isEditing) onCancelEdit?.()
-      setEmojiOpen(false); setGifOpen(false); setPollOpen(false)
-    }
+    if (e.key === 'Escape' && isEditing) onCancelEdit?.()
   }
 
-  /* ── PASTE IMAGE ── */
   function onPaste(e: ClipboardEvent<HTMLTextAreaElement>) {
     const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'))
-    if (item) {
-      e.preventDefault()
-      const file = item.getAsFile()
-      if (file) { setAttachment(file, 'image'); onFile(file) }
-    }
+    if (item) { e.preventDefault(); const f = item.getAsFile(); if (f) attachFile(f) }
   }
 
-  /* ── DRAG & DROP ── */
   function onDragOver(e: DragEvent) { e.preventDefault(); setDragOver(true) }
   function onDragLeave() { setDragOver(false) }
   function onDrop(e: DragEvent) {
     e.preventDefault(); setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) {
-      setAttachment(file, file.type.startsWith('image/') ? 'image' : 'file')
-      onFile(file)
-    }
+    const f = e.dataTransfer.files[0]; if (f) attachFile(f)
   }
 
-  /* ── VOICE ── */
   async function startRec() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const rec = new MediaRecorder(stream)
-      chunksRef.current = []
-      recStartRef.current = Date.now()
-      setRecElapsed(0)
+      chunksRef.current = []; recStartRef.current = Date.now(); setRecElapsed(0)
       rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      rec.start(100)
-      mediaRef.current = rec
-      setIsRec(true)
-      recTickRef.current = setInterval(() => {
-        setRecElapsed(Math.floor((Date.now() - recStartRef.current) / 1000))
-      }, 500)
+      rec.start(100); mediaRef.current = rec; setIsRec(true)
+      recTickRef.current = setInterval(() =>
+        setRecElapsed(Math.floor((Date.now() - recStartRef.current) / 1000)), 500)
     } catch { alert('Microphone access denied') }
   }
 
   function stopRec(send: boolean) {
     clearInterval(recTickRef.current)
-    const rec = mediaRef.current
-    if (!rec) { setIsRec(false); return }
+    const rec = mediaRef.current; if (!rec) { setIsRec(false); return }
     rec.onstop = () => {
       if (send && chunksRef.current.length > 0) {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
         const total = Math.round((Date.now() - recStartRef.current) / 1000)
-        onVoice(blob, `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, '0')}`)
+        onVoice(blob, fmt(total))
       }
       rec.stream.getTracks().forEach(t => t.stop())
     }
     rec.stop(); setIsRec(false); setRecElapsed(0)
   }
 
-  /* ── EMOJI ── */
+  function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; if (!file) return
+    attachFile(file); e.target.value = ''
+  }
+
   function insertEmoji(emoji: string) {
     const el = textareaRef.current
-    const start = el?.selectionStart ?? text.length
-    const end = el?.selectionEnd ?? text.length
-    const next = text.slice(0, start) + emoji + text.slice(end)
+    const s = el?.selectionStart ?? text.length
+    const en = el?.selectionEnd ?? text.length
+    const next = text.slice(0, s) + emoji + text.slice(en)
     setText(next)
-    setTimeout(() => {
-      el?.setSelectionRange(start + emoji.length, start + emoji.length)
-      el?.focus()
-    }, 0)
+    setTimeout(() => { el?.setSelectionRange(s + emoji.length, s + emoji.length); el?.focus(); autoResize() }, 0)
+    setEmojiOpen(false)
   }
 
-  /* ── FILE SELECT ── */
-  function onFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const type = file.type.startsWith('image/') ? 'image'
-      : file.type.startsWith('video/') ? 'video'
-        : 'file'
-    setAttachment(file, type)
-    onFile(file)
-    e.target.value = ''
-  }
+  /* Sheet actions */
+  const sheetActions: SheetAction[] = [
+    {
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>,
+      label: 'Camera', bg: '#6366f1', onClick: () => cameraRef.current?.click(),
+    },
+    {
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>,
+      label: 'Gallery', bg: '#0ea5e9', onClick: () => fileRef.current?.click(),
+    },
+    {
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>,
+      label: 'Document', bg: '#f59e0b', onClick: () => fileRef.current?.click(),
+    },
+  ]
 
-  /* ── DERIVED STATE ── */
   const charCount = text.length
   const overLimit = charCount > MAX_CHARS
   const nearLimit = charCount > WARN_CHARS
-  const canSend = (text.trim().length > 0 || !!attFile) && !overLimit && !aiLoading
-
-  /* ── PANEL TOGGLES ── */
-  function toggleGif() { setGifOpen(g => { if (!g) { setPollOpen(false); setEmojiOpen(false) } return !g }) }
-  function togglePoll() { setPollOpen(p => { if (!p) { setGifOpen(false); setEmojiOpen(false) } return !p }) }
-  function toggleEmoji() { setEmojiOpen(e => { if (!e) { setGifOpen(false); setPollOpen(false) } return !e }) }
-
-  /* ── TEXTAREA CSS CLASSES ── */
-  const textareaClass = [
-    styles.textarea,
-    isEditing ? styles.textareaEdit : '',
-    overLimit ? styles.textareaOverLimit : '',
-  ].filter(Boolean).join(' ')
+  const canSend = (text.trim().length > 0 || !!attFile) && !overLimit
 
   return (
-    <div
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      className={`${styles.root} ${dragOver ? styles.rootDrag : ''}`}
-    >
-      {/* Drag overlay */}
-      {dragOver && (
-        <div className={styles.dragOverlay}>
-          📎 Drop file to attach
-        </div>
-      )}
+    <>
+      <div
+        onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+        className={[styles.root, dragOver ? styles.rootDrag : ''].filter(Boolean).join(' ')}
+      >
+        {dragOver && <div className={styles.dragOverlay}>📎 Drop to attach</div>}
 
-      {/* Edit mode banner */}
-      {isEditing && (
-        <div className={styles.editBanner}>
-          <span style={{ fontSize: 14 }}>✏️</span>
-          <span className={styles.editBannerText}>
-            Editing message — press{' '}
-            <kbd className={styles.editBannerKbd}>Enter</kbd>
-            {' '}to save
-          </span>
-          <button onClick={onCancelEdit} className={styles.editBannerCancel}>
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Reply preview */}
-      {replyTo && !isEditing && (
-        <div className={styles.replyPreview}>
-          <div className={styles.replyPreviewInner}>
-            <div className={styles.replyLabel}>↩ Replying to {replyTo.senderName}</div>
-            <div className={styles.replyText}>{replyTo.text}</div>
+        {isEditing && (
+          <div className={styles.editBanner}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            <span className={styles.editText}>Editing — <kbd className={styles.editKbd}>Enter</kbd> to save</span>
+            <button onClick={onCancelEdit} className={styles.editCancel}>Cancel</button>
           </div>
-          <button onClick={() => setReplyTo(null)} className={styles.dismissBtn}>✕</button>
-        </div>
-      )}
+        )}
 
-      {/* Attachment preview */}
-      {attFile && (
-        <div className={styles.attPreview}>
-          {attPreview
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={attPreview} alt="" className={styles.attThumb} />
-            : (
-              <div className={styles.attIcon}>
-                {attType === 'video' ? '🎥' : attType === 'audio' ? '🎙️' : '📎'}
-              </div>
-            )
-          }
-          <div className={styles.attInfo}>
-            <div className={styles.attName}>{attFile.name}</div>
-            <div className={styles.attMeta}>
-              {(attFile.size / 1024).toFixed(1)} KB · {attType}
+        {replyTo && !isEditing && (
+          <div className={styles.replyPreview}>
+            <div className={styles.replyBar} />
+            <div className={styles.replyInner}>
+              <div className={styles.replyName}>↩ {replyTo.senderName}</div>
+              <div className={styles.replyText}>{replyTo.text}</div>
             </div>
+            <button onClick={onClearReply} className={styles.dismissBtn}>✕</button>
           </div>
-          <button
-            onClick={() => setAttachment(null, null)}
-            className={styles.attRemove}
-          >✕</button>
-        </div>
-      )}
+        )}
 
-      {/* GIF panel */}
-      {gifOpen && <GifPanel onPick={onGif} onClose={() => setGifOpen(false)} />}
-      {pollOpen && <PollBuilder onSend={onPoll} onClose={() => setPollOpen(false)} />}
+        {attFile && (
+          <div className={styles.attPreview}>
+            {attPreview
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={attPreview} alt="" className={styles.attThumb} />
+              : <span className={styles.attIconBox}>{attType === 'video' ? '🎥' : '📎'}</span>
+            }
+            <div className={styles.attInfo}>
+              <div className={styles.attName}>{attFile.name}</div>
+              <div className={styles.attMeta}>{(attFile.size / 1024).toFixed(1)} KB · {attType}</div>
+            </div>
+            <button onClick={() => { setAttFile(null); setAttPreview(null) }} className={styles.attRemove}>✕</button>
+          </div>
+        )}
 
-      {/* AI chips */}
-      {(aiChips.length > 0 || aiLoading) && (
-        <div className={styles.aiChipsBar}>
-          {aiLoading
-            ? <span className={styles.aiThinkingLabel}>🤖 AI thinking…</span>
-            : (
-              <>
-                <span className={styles.aiChipsLabel}>/ai →</span>
-                {aiChips.map(chip => (
-                  /* input-chip is a global class defined in globals.css */
-                  <button key={chip} className="input-chip" onClick={() => applyAiChip(chip)}>
-                    {chip}
-                  </button>
-                ))}
-              </>
-            )
-          }
-        </div>
-      )}
+        {isRec && (
+          <VoiceBar elapsed={recElapsed} onStop={() => stopRec(true)} onCancel={() => stopRec(false)} />
+        )}
 
-      {/* Voice recording UI */}
-      {isRec && (
-        <VoiceRecordingUI
-          elapsed={recElapsed}
-          onStop={() => stopRec(true)}
-          onCancel={() => stopRec(false)}
-        />
-      )}
-
-      {/* Main input row */}
-      {!isRec && (
-        <div className={styles.inputRow}>
-          {/* Left buttons */}
-          <IBtn
-            icon="📎"
-            onClick={() => fileRef.current?.click()}
-            title="Attach file (⌘U)"
-          />
-          <IBtn
-            icon={<span style={{ fontSize: 11, fontWeight: 800, fontFamily: 'var(--mono)', letterSpacing: -0.5 }}>GIF</span>}
-            onClick={toggleGif}
-            active={gifOpen}
-            title="Send GIF"
-          />
-          <IBtn
-            icon="📊"
-            onClick={togglePoll}
-            active={pollOpen}
-            title="Create poll"
-          />
-
-          {/* Textarea + emoji */}
-          <div className={styles.textareaWrap}>
-            <textarea
-              ref={textareaRef}
-              placeholder={isEditing ? 'Edit message…' : 'Message… (try /ai)'}
-              value={text}
-              onKeyDown={handleKey}
-              onPaste={onPaste}
-              onChange={e => {
-                setText(e.target.value)
-                autoResize()
-                checkAiCommand(e.target.value)
-                fireTyping()
-              }}
-              rows={1}
-              className={textareaClass}
+        {!isRec && (
+          <div className={styles.inputRow}>
+            <IBtn
+              icon={<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l8.57-8.57A4 4 0 1118 8.84l-8.59 8.57a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>}
+              onClick={mobile ? () => setSheetOpen(true) : () => fileRef.current?.click()}
+              title="Attach"
             />
 
-            {/* Emoji toggle */}
-            <button
-              onClick={toggleEmoji}
-              className={`${styles.emojiToggle} ${emojiOpen ? styles.emojiToggleActive : ''}`}
-            >
-              😊
-            </button>
-
-            {/* Emoji picker */}
-            {emojiOpen && (
-              <EmojiPicker
-                onPick={insertEmoji}
-                onClose={() => setEmojiOpen(false)}
+            {!mobile && onPoll && (
+              <IBtn
+                icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>}
+                onClick={onPoll} title="Poll"
               />
             )}
-          </div>
 
-          {/* Char count */}
-          {nearLimit && (
-            <div className={`${styles.charCount} ${overLimit ? styles.charCountOver : styles.charCountWarn}`}>
-              {MAX_CHARS - charCount}
-            </div>
-          )}
-
-          {/* Voice / Send */}
-          {!text.trim() && !attFile && !isEditing
-            ? (
-              <IBtn
-                icon="🎙️"
-                onClick={startRec}
-                title="Record voice"
-                danger={isRec}
-                active={isRec}
+            <div className={styles.textareaWrap}>
+              <textarea
+                ref={textareaRef}
+                placeholder={isEditing ? 'Edit message…' : 'Message…'}
+                value={text}
+                rows={1}
+                className={[styles.textarea, isEditing ? styles.textareaEdit : '', overLimit ? styles.textareaOver : ''].filter(Boolean).join(' ')}
+                onKeyDown={handleKey}
+                onPaste={onPaste}
+                onChange={e => { setText(e.target.value); autoResize(); fireTyping() }}
               />
-            ) : (
-              <button
-                onClick={handleSend}
-                disabled={!canSend}
-                className={[
-                  styles.sendBtn,
-                  isEditing ? styles.sendBtnEdit : '',
-                  !canSend ? styles.sendBtnDisabled : '',
-                ].filter(Boolean).join(' ')}
-              >
-                {isEditing ? '✓' : '↑'}
-              </button>
-            )
-          }
-        </div>
-      )}
+            </div>
 
-      {/* Desktop hint */}
-      {!isRec && !isEditing && (
-        <div className={styles.hint}>
-          <span className={styles.hintText}>
-            Enter ↵ send · Shift+Enter newline · /ai commands
-          </span>
-        </div>
-      )}
+            {nearLimit && (
+              <span className={[styles.charCount, overLimit ? styles.charOver : styles.charWarn].join(' ')}>
+                {MAX_CHARS - charCount}
+              </span>
+            )}
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*,video/*,audio/*,.pdf,.zip,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-        style={{ display: 'none' }}
-        onChange={onFileSelect}
-        multiple={false}
-      />
-    </div>
+            <IBtn
+              icon={<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></svg>}
+              onClick={() => { if (mobile) textareaRef.current?.focus(); else setEmojiOpen(p => !p) }}
+              active={emojiOpen && !mobile}
+              title="Emoji"
+            />
+
+            {!text.trim() && !attFile && !isEditing
+              ? (
+                <IBtn
+                  icon={<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>}
+                  onClick={startRec} title="Voice"
+                />
+              ) : (
+                <button
+                  onClick={handleSend} disabled={!canSend}
+                  className={[styles.sendBtn, isEditing ? styles.sendEdit : '', !canSend ? styles.sendDisabled : ''].filter(Boolean).join(' ')}
+                >
+                  {isEditing
+                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>
+                  }
+                </button>
+              )
+            }
+          </div>
+        )}
+
+        {!mobile && !isRec && !isEditing && (
+          <div className={styles.hint}>Enter ↵ send · Shift+Enter newline</div>
+        )}
+
+        <input ref={fileRef} type="file" accept="image/*,video/*,audio/*,.pdf,.zip,.txt,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }} onChange={onFileSelect} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={onFileSelect} />
+      </div>
+
+      {/* Portal bottom sheet — lives on document.body, never clipped */}
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} actions={sheetActions} />
+    </>
   )
 }
