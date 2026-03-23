@@ -1,0 +1,136 @@
+/* GifBubble.module.css */
+@keyframes shimmerSweep {
+    0% {
+        background-position: -400px 0;
+    }
+
+    100% {
+        background-position: 400px 0;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.wrap {
+    cursor: pointer;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    max-width: 240px;
+    min-width: 120px;
+    display: inline-block;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s;
+    outline: none;
+    background: var(--bg2, #141420);
+}
+
+.wrap:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.wrap:active {
+    transform: scale(0.97);
+}
+
+.wrap:focus-visible {
+    outline: 2px solid var(--ac, #8b5cf6);
+    outline-offset: 2px;
+}
+
+.mine {
+    border-radius: 18px 4px 18px 18px;
+}
+
+.theirs {
+    border-radius: 4px 18px 18px 18px;
+}
+
+.shimmer {
+    position: absolute;
+    inset: 0;
+    min-height: 120px;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.09) 50%,
+            rgba(255, 255, 255, 0.04) 75%);
+    background-size: 400px 100%;
+    animation: shimmerSweep 1.4s ease infinite;
+}
+
+.img {
+    width: 100%;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.imgLoaded {
+    opacity: 1;
+    animation: fadeIn 0.25s ease both;
+}
+
+/* GIF badge */
+.badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-size: 9.5px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.95);
+    font-family: var(--mono, monospace);
+    text-transform: uppercase;
+}
+
+.badgeDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #22d3a0;
+    box-shadow: 0 0 5px #22d3a0;
+    animation: badgePulse 1.6s ease infinite;
+}
+
+/* Hover sheen */
+.sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.wrap:hover .sheen {
+    opacity: 1;
+}

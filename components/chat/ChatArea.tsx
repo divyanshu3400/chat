@@ -1,97 +1,86 @@
 'use client'
 
-/**
- * ChatArea — Production-grade mobile-first chat component
- *
- * Features:
- *  ✅ Date-wise separators with relative labels (Today, Yesterday, Mon 12 Jan…)
- *  ✅ E2E encryption info banner on fresh chat
- *  ✅ Message grouping (consecutive messages grouped by sender)
- *  ✅ All bubble types: text/markdown, image, video, audio, file, gif, poll, system
- *  ✅ Upload progress bar with cancel + retry
- *  ✅ Download progress for files
- *  ✅ Image/video lightbox with pinch-zoom
- *  ✅ Audio player with waveform scrub + speed control
- *  ✅ Message reactions with who-reacted sheet
- *  ✅ Reply, Edit, Delete, Star, Forward, Copy, Info
- *  ✅ Context menu (long-press on mobile, right-click on desktop)
- *  ✅ Swipe-to-reply (touch devices)
- *  ✅ Read receipts (sent → delivered → read + timestamps)
- *  ✅ Typing indicator with sender name in groups
- *  ✅ Unread jump button with count
- *  ✅ Scroll to bottom FAB
- *  ✅ Smooth scroll-to-quoted message with highlight flash
- *  ✅ Failed message retry
- *  ✅ Optimistic UI (message appears instantly, syncs background)
- *  ✅ Virtualized list via IntersectionObserver batch loading
- *  ✅ Pull-to-load-more (older messages)
- */
-
 import {
-  useEffect, useRef, useState, useCallback,
-  useMemo, useTransition, memo,
+  useCallback, useMemo, useRef, useState, useTransition, useEffect,
 } from 'react'
-import { useStore } from '@/lib/store'
-import { mdRender, fmtTime, fmtBytes, sameDay, dateSep } from '@/lib/utils'
-import { Crypto } from '@/lib/crypto'
-import InputBar from './InputBar'
-import type { Message, Conversation } from '@/types'
+import { useStore, useChatMessages, useTyping, useUploads, usePagination } from '@/lib/store'
 import {
-  ref, push, set, update, onValue,
-  serverTimestamp, query, orderByChild,
-  limitToLast, startAfter, get, type Unsubscribe,
+  get, limitToLast, onValue, orderByChild, push, query, ref,
+  serverTimestamp, set, startAfter, update, type Unsubscribe,
 } from 'firebase/database'
+import { getDownloadURL, uploadBytesResumable, ref as sref } from 'firebase/storage'
 import { getFirebaseDB, getFirebaseStorage } from '@/lib/firebase'
-import {
-  ref as sref, uploadBytesResumable,
-  getDownloadURL
-} from 'firebase/storage'
-import { CtxMenu, CtxTarget } from '../shared/CtxMenu'
-import { DateSep, EncryptionBanner, Lightbox, MessageBubble, ReactorSheet, TypingIndicator, UploadBubble, UploadEntry } from './Bubbles'
+import { mdRender, fmtTime, fmtBytes, sameDay, dateSep, stripUndefined } from '@/lib/utils'
 
+import type { Conversation, Message } from '@/types'
+import { Crypto } from '@/lib/crypto'
+import { DateSep, EncryptionBanner, Lightbox, MessageBubble, ReactorSheet, TypingIndicator, UploadBubble } from './Bubbles'
+import InputBar from './InputBar'
+import { CtxMenu } from '../shared/CtxMenu'
 
-interface Props {
-  cid: string
-  conv: Conversation
-  onBack: () => void
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   CONSTANTS
-═══════════════════════════════════════════════════════════════ */
 const PAGE_SIZE = 40
 
+interface Props { cid: string; conv: Conversation }
+
+interface CtxTarget {
+  x: number; y: number
+  id: string; msg: Message
+  isMine: boolean; text: string
+}
+interface ReactorSheetData { emoji: string; users: any[] }
 
 /* ═══════════════════════════════════════════════════════════════
-   MAIN CHAT AREA
+   COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export default function ChatArea({ cid, conv }: Props) {
-  const {
-    me, myKP, sharedKeys, setSharedKey,
-    replyTo, setReplyTo,
-    attFile, setAttachment,
-    showToast, prefs,
-  } = useStore()
+  /* ── Granular store slices — each re-renders ONLY when its own data changes ── */
+  const me = useStore(s => s.me)
+  const myKP = useStore(s => s.myKP)
+  const prefs = useStore(s => s.prefs)
 
-  const [messages, setMessages] = useState<[string, Message][]>([])
-  const [decrypted, setDecrypted] = useState<Record<string, string>>({})
-  const [typingNames, setTypingNames] = useState<string[]>([])
+  // Actions — stable references, never cause re-renders
+  const setMessages = useStore(s => s.setMessages)
+  const prependMessages = useStore(s => s.prependMessages)
+  const setDecrypted = useStore(s => s.setDecrypted)
+  const setTyping = useStore(s => s.setTyping)
+  const addUpload = useStore(s => s.addUpload)
+  const updateUpload = useStore(s => s.updateUpload)
+  const removeUpload = useStore(s => s.removeUpload)
+  const setHasMore = useStore(s => s.setHasMore)
+  const setOldestTs = useStore(s => s.setOldestTs)
+  const showToast = useStore(s => s.showToast)
+  const sharedKeys = useStore(s => s.sharedKeys)
+  const setSharedKey = useStore(s => s.setSharedKey)
+  const setReplyTo = useStore(s => s.setReplyTo)
+  const replyTo = useStore(s => s.replyTo)
+  const setAttachment = useStore(s => s.setAttachment)
+  const attFile = useStore(s => s.attFile)
+  const editMsgId = useStore(s => s.editMsgId)
+  const setEditMsgId = useStore(s => s.setEditMsgId)
+
+  // Per-cid data — these hooks only re-render when this cid's data changes
+  const messages = useChatMessages(cid)
+  const typingNames = useTyping(cid)
+  const uploads = useUploads()
+  const { hasMore, oldestTs } = usePagination(cid)
+
+  /* ── Local UI state (intentionally NOT in store) ── */
   const [ctxMenu, setCtxMenu] = useState<CtxTarget | null>(null)
-  const [reactorSheet, setReactorSheet] = useState<ReactorSheet | null>(null)
+  const [reactorSheet, setReactorSheet] = useState<ReactorSheetData | null>(null)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
-  const [uploads, setUploads] = useState<UploadEntry[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showScrollFab, setShowScrollFab] = useState(false)
-  const [editMsgId, setEditMsgId] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+
+  // Swipe stays local — fires at 60fps, must NOT go to global store
   const [swipeX, setSwipeX] = useState(0)
   const [swipeMsgId, setSwipeMsgId] = useState<string | null>(null)
-  const [, startTransition] = useTransition()
 
   const msgsRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<{ x: number; y: number; msgId: string | null }>({ x: 0, y: 0, msgId: null })
-  const oldestTsRef = useRef<number>(0)
+  const rafRef = useRef<number>(0)   // for scroll throttle
+  const [, startTransition] = useTransition()
+
   const isGroup = !!conv.isGroup
   const peerUid = conv.otherUid
 
@@ -109,7 +98,10 @@ export default function ChatArea({ cid, conv }: Props) {
   }, [cid, peerUid, myKP, sharedKeys, isGroup, setSharedKey])
 
   /* ── DECRYPT BATCH ── */
-  const decryptBatch = useCallback(async (pairs: [string, Message][], sk: CryptoKey | null) => {
+  const decryptBatch = useCallback(async (
+    pairs: [string, Message][],
+    sk: CryptoKey | null,
+  ): Promise<Record<string, string>> => {
     const out: Record<string, string> = {}
     await Promise.all(pairs.map(async ([id, msg]) => {
       if (msg.encrypted && sk && !isGroup) {
@@ -121,7 +113,7 @@ export default function ChatArea({ cid, conv }: Props) {
     return out
   }, [isGroup])
 
-  /* ── LISTEN MESSAGES (realtime, latest PAGE_SIZE) ── */
+  /* ── REALTIME LISTENER ── */
   useEffect(() => {
     const db = getFirebaseDB()
     const mq = query(ref(db, `messages/${cid}`), orderByChild('ts'), limitToLast(PAGE_SIZE))
@@ -130,120 +122,142 @@ export default function ChatArea({ cid, conv }: Props) {
 
     const unsub: Unsubscribe = onValue(mq, async snap => {
       const raw = (snap.val() ?? {}) as Record<string, Message>
-      const sorted = Object.entries(raw).sort((a, b) => ((a[1].ts ?? 0) as number) - ((b[1].ts ?? 0) as number))
+      const sorted = Object.entries(raw)
+        .sort((a, b) => ((a[1].ts ?? 0) as number) - ((b[1].ts ?? 0) as number))
 
-      if (sorted.length > 0) oldestTsRef.current = (sorted[0][1].ts ?? 0) as number
+      if (sorted.length > 0) {
+        setOldestTs(cid, (sorted[0][1].ts ?? 0) as number)
+      }
 
-      startTransition(() => setMessages(sorted))
+      // Batch store writes with lower priority — won't block input
+      startTransition(() => setMessages(cid, sorted))
 
       const dec = await decryptBatch(sorted, sk)
-      startTransition(() => setDecrypted(prev => ({ ...prev, ...dec })))
+      // setDecrypted only writes keys that actually changed (built into store)
+      startTransition(() => setDecrypted(dec))
 
-      /* Unread */
       const unread = sorted.filter(([, m]) => m.uid !== me?.uid && m.status !== 'read')
       setUnreadCount(unread.length)
 
-      /* Mark read */
       if (prefs.readReceipts && me) {
-        const db2 = getFirebaseDB()
-        unread.forEach(([id]) => update(ref(db2, `messages/${cid}/${id}`), { status: 'read' }))
+        unread.forEach(([id]) =>
+          update(ref(db, `messages/${cid}/${id}`), { status: 'read' })
+        )
       }
       if (me) update(ref(db, `conversations/${me.uid}/${cid}`), { unread: 0 })
 
-      /* Auto-scroll only if near bottom */
       if (msgsRef.current) {
         const { scrollTop, scrollHeight, clientHeight } = msgsRef.current
-        if (scrollHeight - scrollTop - clientHeight < 160) scrollBottom()
+        if (scrollHeight - scrollTop - clientHeight < 160) scrollBottom(false)
       }
     })
 
-    /* Typing */
+    // Typing listener
     const typRef = ref(db, `typing/${cid}`)
     const typUnsub: Unsubscribe = onValue(typRef, snap => {
       const data = (snap.val() ?? {}) as Record<string, { typing: boolean; name?: string }>
       const names = Object.entries(data)
         .filter(([uid, v]) => uid !== me?.uid && v?.typing)
         .map(([, v]) => v.name ?? 'Someone')
-      setTypingNames(names)
+      setTyping(cid, names)   // store skips write if names didn't change
     })
 
     return () => { unsub(); typUnsub() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cid, me?.uid])
 
-  /* ── LOAD MORE (pull-to-load-top) ── */
-  async function loadMore() {
-    if (loadingMore || !hasMore || !oldestTsRef.current) return
+  /* ── LOAD MORE (pagination) ── */
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !oldestTs) return
     setLoadingMore(true)
     const db = getFirebaseDB()
     const snap = await get(
-      query(ref(db, `messages/${cid}`), orderByChild('ts'), limitToLast(PAGE_SIZE + 1), startAfter(null, `${oldestTsRef.current - 1}`))
+      query(
+        ref(db, `messages/${cid}`),
+        orderByChild('ts'),
+        limitToLast(PAGE_SIZE + 1),
+        startAfter(null, `${oldestTs - 1}`)
+      )
     )
     const raw = (snap.val() ?? {}) as Record<string, Message>
-    const sorted = Object.entries(raw).sort((a, b) => ((a[1].ts ?? 0) as number) - ((b[1].ts ?? 0) as number))
-    if (sorted.length <= 1) { setHasMore(false); setLoadingMore(false); return }
-    if (sorted.length > 0) oldestTsRef.current = (sorted[0][1].ts ?? 0) as number
+    const sorted = Object.entries(raw)
+      .sort((a, b) => ((a[1].ts ?? 0) as number) - ((b[1].ts ?? 0) as number))
+
+    if (sorted.length <= 1) {
+      setHasMore(cid, false)
+      setLoadingMore(false)
+      return
+    }
+    setOldestTs(cid, (sorted[0][1].ts ?? 0) as number)
+
     const sk = await getSK()
     const dec = await decryptBatch(sorted, sk)
+
     startTransition(() => {
-      setMessages(prev => {
-        const existing = new Set(prev.map(([id]) => id))
-        const newOnes = sorted.filter(([id]) => !existing.has(id))
-        return [...newOnes, ...prev]
-      })
-      setDecrypted(prev => ({ ...prev, ...dec }))
+      prependMessages(cid, sorted)   // store deduplicates automatically
+      setDecrypted(dec)
     })
     setLoadingMore(false)
-  }
+  }, [cid, loadingMore, hasMore, oldestTs, getSK, decryptBatch, prependMessages, setDecrypted, setHasMore, setOldestTs])
 
-  /* ── SCROLL TRACKING ── */
-  function onScroll() {
-    const el = msgsRef.current
-    if (!el) return
-    const { scrollTop, scrollHeight, clientHeight } = el
-    setShowScrollFab(scrollHeight - scrollTop - clientHeight > 250)
-    if (scrollTop < 80 && !loadingMore) loadMore()
-  }
-
-  function scrollBottom(smooth = true) {
+  /* ── SCROLL (RAF-throttled — was firing setState on every pixel) ── */
+  const scrollBottom = useCallback((smooth = true) => {
     setTimeout(() => {
-      if (msgsRef.current)
-        msgsRef.current.scrollTo({ top: msgsRef.current.scrollHeight, behavior: smooth ? 'smooth' : 'instant' })
+      msgsRef.current?.scrollTo({
+        top: msgsRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'instant',
+      })
     }, 40)
-  }
+  }, [])
 
-  /* ── SWIPE TO REPLY (touch) ── */
-  function onMsgTouchStart(e: React.TouchEvent, msgId: string) {
+  const onScroll = useCallback(() => {
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      const el = msgsRef.current
+      if (!el) return
+      const { scrollTop, scrollHeight, clientHeight } = el
+      const distFromBottom = scrollHeight - scrollTop - clientHeight
+      setShowScrollFab(distFromBottom > 250)
+      if (scrollTop < 80) loadMore()
+    })
+  }, [])
+
+  /* ── SWIPE TO REPLY ── */
+  const onMsgTouchStart = useCallback((e: React.TouchEvent, msgId: string) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, msgId }
-  }
-  function onMsgTouchMove(e: React.TouchEvent) {
+  }, [])
+
+  const onMsgTouchMove = useCallback((e: React.TouchEvent) => {
     const dx = e.touches[0].clientX - touchStartRef.current.x
     const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y)
-    if (dy > 20) return  // vertical scroll wins
+    if (dy > 20) return
     if (Math.abs(dx) > 8) {
       setSwipeX(dx)
       setSwipeMsgId(touchStartRef.current.msgId)
     }
-  }
-  function onMsgTouchEnd() {
+  }, [])
+
+  const onMsgTouchEnd = useCallback(() => {
     if (Math.abs(swipeX) > 55 && swipeMsgId) {
-      const [, msg] = messages.find(([id]) => id === swipeMsgId) ?? []
-      if (msg) {
-        const text = decrypted[swipeMsgId] ?? msg.text ?? ''
-        setReplyTo({ id: swipeMsgId, text: text.substring(0, 60), senderName: msg.senderName ?? 'User' })
+      const found = messages.find(([id]) => id === swipeMsgId)
+      if (found) {
+        const [, msg] = found
+        const text = msg.text ?? ''
+        setReplyTo({ id: swipeMsgId, type: msg.type, mediaThumb: msg.thumbnailUrl, text: msg.fileName || text.substring(0, 60), senderName: msg.senderName ?? 'User' })
         showToast('Replying…')
       }
     }
-    setSwipeX(0); setSwipeMsgId(null)
-  }
+    setSwipeX(0)
+    setSwipeMsgId(null)
+  }, [swipeX, swipeMsgId, messages, setReplyTo, showToast])
 
   /* ── SEND ── */
-  async function sendMsg(text: string) {
+  const sendMsg = useCallback(async (text: string) => {
     if (!me) return
     const db = getFirebaseDB()
     const stor = getFirebaseStorage()
 
-    /* Attachment */
+    // ── Attachment upload ──
     if (attFile) {
       const type = attFile.type.startsWith('image/') ? 'image'
         : attFile.type.startsWith('video/') ? 'video'
@@ -251,19 +265,18 @@ export default function ChatArea({ cid, conv }: Props) {
             : 'file'
       const preview = type === 'image' ? URL.createObjectURL(attFile) : undefined
       const entryId = `upload_${Date.now()}`
-      const task = uploadBytesResumable(sref(stor, `messages/${cid}/${Date.now()}_${attFile.name}`), attFile)
+      const storRef = sref(stor, `messages/${cid}/${Date.now()}_${attFile.name}`)
+      const task = uploadBytesResumable(storRef, attFile)
 
-      const entry: UploadEntry = { id: entryId, file: attFile, task, progress: 0, status: 'uploading', preview }
-      setUploads(u => [...u, entry])
+      addUpload({ id: entryId, file: attFile, task, progress: 0, status: 'uploading', preview })
       setAttachment(null, null)
 
       task.on(
         'state_changed',
-        snap => {
-          const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100)
-          setUploads(u => u.map(e => e.id === entryId ? { ...e, progress: pct } : e))
-        },
-        () => setUploads(u => u.map(e => e.id === entryId ? { ...e, status: 'failed' } : e)),
+        snap => updateUpload(entryId, {
+          progress: Math.round(snap.bytesTransferred / snap.totalBytes * 100),
+        }),
+        () => updateUpload(entryId, { status: 'failed' }),
         async () => {
           const url = await getDownloadURL(task.snapshot.ref)
           const msgData: Partial<Message> = {
@@ -273,10 +286,11 @@ export default function ChatArea({ cid, conv }: Props) {
             ...(replyTo ? { replyTo } : {}),
           }
           push(ref(db, `messages/${cid}`), msgData)
-          update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg: `[${type}]`, updatedAt: serverTimestamp() })
-          if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg: `[${type}]`, updatedAt: serverTimestamp() })
-          setUploads(u => u.filter(e => e.id !== entryId))
-          preview && URL.revokeObjectURL(preview)
+          const lastMsg = `[${type}]`
+          update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg, updatedAt: serverTimestamp() })
+          if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg, updatedAt: serverTimestamp() })
+          removeUpload(entryId)
+          if (preview) URL.revokeObjectURL(preview)
           showToast('Sent ✓')
           setReplyTo(null)
         }
@@ -286,7 +300,7 @@ export default function ChatArea({ cid, conv }: Props) {
 
     if (!text.trim()) return
 
-    /* Encrypt DMs */
+    // ── Encrypt DMs ──
     let finalText = text
     let encrypted = false
     if (!isGroup && peerUid) {
@@ -294,88 +308,92 @@ export default function ChatArea({ cid, conv }: Props) {
       if (sk) { finalText = await Crypto.enc(sk, text); encrypted = true }
     }
 
-    /* Edit */
+    // ── Edit existing message ──
     if (editMsgId) {
-      update(ref(db, `messages/${cid}/${editMsgId}`), { text: finalText, edited: true })
-      setEditMsgId(null); showToast('Edited ✓'); return
+      update(ref(db, `messages/${cid}/${editMsgId}`), { text: finalText, edited: true, editedAt: Date.now() })
+      setEditMsgId(null)
+      showToast('Edited ✓')
+      return
     }
 
-    /* Optimistic insert */
+    // ── Optimistic insert ──
     const tempId = `temp_${Date.now()}`
     const msgData: Message = {
       uid: me.uid, senderName: me.displayName, senderPhoto: me.photoURL ?? '',
       text: finalText, type: 'text', encrypted,
-      ts: Date.now() as any, status: 'sent',
+      ts: Date.now() as any, status: 'sending',
       ...(replyTo ? { replyTo } : {}),
     }
-    setMessages(prev => [...prev, [tempId, msgData]])
-    setDecrypted(prev => ({ ...prev, [tempId]: mdRender(text) }))
+    // Write directly to store without going through Firebase round-trip
+    startTransition(() => {
+      setMessages(cid, [...messages, [tempId, msgData]])
+      setDecrypted({ [tempId]: mdRender(text) })
+    })
     scrollBottom()
     setReplyTo(null)
 
-    /* Persist */
+    // ── Persist ──
     const newRef = push(ref(db, `messages/${cid}`))
-    set(newRef, { ...msgData, ts: serverTimestamp() })
-    /* Remove optimistic */
-    setMessages(prev => prev.filter(([id]) => id !== tempId))
-
-    /* Update convs */
+    await set(newRef, stripUndefined({ ...msgData, ts: serverTimestamp(), status: 'sent' }))
     const preview = encrypted ? '🔐 Encrypted message' : text.substring(0, 60)
     update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg: preview, updatedAt: serverTimestamp() })
     if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg: preview, updatedAt: serverTimestamp() })
-    if (me) update(ref(db, `typing/${cid}`), { [me.uid]: { typing: false } })
-  }
+    update(ref(db, `typing/${cid}`), { [me.uid]: { typing: false } })
+  }, [
+    me, cid, peerUid, isGroup, attFile, replyTo, editMsgId, messages,
+    getSK, addUpload, updateUpload, removeUpload, setAttachment,
+    setReplyTo, setEditMsgId, setMessages, setDecrypted, showToast, scrollBottom,
+  ])
 
-  async function sendVoice(blob: Blob, dur: string) {
+  /* ── VOICE ── */
+  const sendVoice = useCallback(async (blob: Blob, dur: string) => {
     if (!me) return
     const stor = getFirebaseStorage()
     const db = getFirebaseDB()
-    const task = uploadBytesResumable(sref(stor, `voice/${cid}/${Date.now()}.webm`), blob)
     const entryId = `upload_voice_${Date.now()}`
-    const entry: UploadEntry = { id: entryId, file: new File([blob], 'voice.webm'), task, progress: 0, status: 'uploading' }
-    setUploads(u => [...u, entry])
-    task.on('state_changed',
-      snap => { const p = Math.round(snap.bytesTransferred / snap.totalBytes * 100); setUploads(u => u.map(e => e.id === entryId ? { ...e, progress: p } : e)) },
-      () => setUploads(u => u.map(e => e.id === entryId ? { ...e, status: 'failed' } : e)),
+    const storRef = sref(stor, `voice/${cid}/${Date.now()}.webm`)
+    const task = uploadBytesResumable(storRef, blob)
+
+    addUpload({ id: entryId, file: new File([blob], 'voice.webm'), task, progress: 0, status: 'uploading' })
+
+    task.on(
+      'state_changed',
+      snap => updateUpload(entryId, { progress: Math.round(snap.bytesTransferred / snap.totalBytes * 100) }),
+      () => updateUpload(entryId, { status: 'failed' }),
       async () => {
         const url = await getDownloadURL(task.snapshot.ref)
-        push(ref(db, `messages/${cid}`), { uid: me.uid, senderName: me.displayName, senderPhoto: me.photoURL, type: 'audio', url, duration: dur, ts: serverTimestamp(), status: 'sent' })
-        update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg: '🎙 Voice message', updatedAt: serverTimestamp() })
-        if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg: '🎙 Voice message', updatedAt: serverTimestamp() })
-        setUploads(u => u.filter(e => e.id !== entryId))
+        push(ref(db, `messages/${cid}`), {
+          uid: me.uid, senderName: me.displayName, senderPhoto: me.photoURL,
+          type: 'audio', url, duration: dur, ts: serverTimestamp(), status: 'sent',
+        })
+        const lastMsg = '🎙 Voice message'
+        update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg, updatedAt: serverTimestamp() })
+        if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg, updatedAt: serverTimestamp() })
+        removeUpload(entryId)
       }
     )
-  }
+  }, [me, cid, peerUid, addUpload, updateUpload, removeUpload])
 
-  async function sendGif(url: string) {
-    if (!me) return
-    const db = getFirebaseDB()
-    push(ref(db, `messages/${cid}`), { uid: me.uid, senderName: me.displayName, senderPhoto: me.photoURL, type: 'gif', url, ts: serverTimestamp(), status: 'sent' })
-    update(ref(db, `conversations/${me.uid}/${cid}`), { lastMsg: '🎞 GIF', updatedAt: serverTimestamp() })
-    if (peerUid) update(ref(db, `conversations/${peerUid}/${cid}`), { lastMsg: '🎞 GIF', updatedAt: serverTimestamp() })
-  }
-
-  async function sendPoll(question: string, options: string[]) {
-    if (!me) return
-    const db = getFirebaseDB()
-    push(ref(db, `messages/${cid}`), { uid: me.uid, senderName: me.displayName, senderPhoto: me.photoURL, type: 'poll', text: question, poll: { question, options }, votes: {}, ts: serverTimestamp(), status: 'sent' })
-  }
-
-  async function addReaction(msgId: string, emoji: string) {
+  /* ── REACTIONS ── */
+  const addReaction = useCallback(async (msgId: string, emoji: string) => {
     if (!me) return
     const db = getFirebaseDB()
     const snap = await get(ref(db, `messages/${cid}/${msgId}/reactions/${me.uid}`))
-    if (snap.val() === emoji) update(ref(db, `messages/${cid}/${msgId}/reactions`), { [me.uid]: null })
-    else update(ref(db, `messages/${cid}/${msgId}/reactions`), { [me.uid]: emoji })
-  }
+    update(ref(db, `messages/${cid}/${msgId}/reactions`), {
+      [me.uid]: snap.val() === emoji ? null : emoji,
+    })
+  }, [me, cid])
 
-  async function deleteMsg(msgId: string) {
-    const db = getFirebaseDB()
-    update(ref(db, `messages/${cid}/${msgId}`), { deleted: true, text: '', type: 'text' })
+  /* ── DELETE ── */
+  const deleteMsg = useCallback(async (msgId: string) => {
+    update(ref(getFirebaseDB(), `messages/${cid}/${msgId}`), {
+      deleted: true, text: '', type: 'text',
+    })
     showToast('Deleted')
-  }
+  }, [cid, showToast])
 
-  function onTyping() {
+  /* ── TYPING ── */
+  const onTyping = useCallback(() => {
     if (!me) return
     const db = getFirebaseDB()
     update(ref(db, `typing/${cid}`), { [me.uid]: { typing: true, name: me.displayName } })
@@ -383,49 +401,41 @@ export default function ChatArea({ cid, conv }: Props) {
       ; (window as any)._typTimer = setTimeout(() => {
         update(ref(db, `typing/${cid}`), { [me.uid]: { typing: false } })
       }, 2000)
-  }
+  }, [me, cid])
 
   /* ── CTX ACTIONS ── */
-  function handleCtxAction(action: string) {
+  const handleCtxAction = useCallback((action: string) => {
     if (!ctxMenu) return
     const { id, msg, text } = ctxMenu
     switch (action) {
-      case 'reply':
-        setReplyTo({ id, text: text.substring(0, 60), senderName: msg.senderName ?? 'User' })
-        break
-      case 'react':
-        /* open picker — handled by double-tap on bubble */
-        showToast('Double-tap the message to react')
-        break
-      case 'star':
-        showToast('Starred ⭐')
-        break
-      case 'copy':
-        navigator.clipboard?.writeText(text)
-        showToast('Copied!')
-        break
-      case 'forward':
-        showToast('Forward coming soon')
-        break
-      case 'info':
-        showToast(`Sent ${fmtTime(msg.ts as number)}  ·  Status: ${msg.status ?? 'sent'}`)
-        break
-      case 'edit':
-        setEditMsgId(id)
-        showToast('Editing — press Enter to save')
-        break
-      case 'delete':
-        deleteMsg(id)
-        break
-      case 'report':
-        showToast('Reported')
-        break
+      case 'reply': setReplyTo({ id, type: msg.type, mediaThumb: msg.thumbnailUrl, text: msg.fileName || text.substring(0, 60), senderName: msg.senderName ?? 'User' }); break
+      case 'react': showToast('Double-tap the message to react'); break
+      case 'star': showToast('Starred ⭐'); break
+      case 'copy': navigator.clipboard?.writeText(text); showToast('Copied!'); break
+      case 'forward': showToast('Forward coming soon'); break
+      case 'info': showToast(`Sent ${fmtTime(msg.ts as number)}  ·  Status: ${msg.status ?? 'sent'}`); break
+      case 'edit': setEditMsgId(id); showToast('Editing — press Enter to save'); break
+      case 'delete': deleteMsg(id); break
+      case 'report': showToast('Reported'); break
     }
     setCtxMenu(null)
-  }
+  }, [ctxMenu, setReplyTo, setEditMsgId, deleteMsg, showToast])
 
-  /* ── GROUP MESSAGES ──
-     Returns list of items with isFirst/isLast flags and date seps  */
+  /* ── SCROLL TO MESSAGE ── */
+  const onScrollTo = useCallback((msgId: string) => {
+    const el = document.getElementById(`mg_${msgId}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('msg-flash')
+    setTimeout(() => el.classList.remove('msg-flash'), 900)
+  }, [])
+
+  /* ── LIGHTBOX HANDLER ── */
+  const onLightbox = useCallback((url: string, type?: 'image' | 'video') => {
+    setLightbox({ url, type: type ?? 'image' })
+  }, [])
+
+  /* ── GROUPED MESSAGES (memoized — only recomputes when messages array changes) ── */
   const grouped = useMemo(() => {
     type Item =
       | { kind: 'sep'; label: string; key: string }
@@ -439,24 +449,21 @@ export default function ChatArea({ cid, conv }: Props) {
       const ts = (msg.ts ?? 0) as number
       const prevTs = prevMsg ? (prevMsg.ts ?? 0) as number : 0
 
-      /* Date separator */
       if (i === 0 || !sameDay(ts, prevTs)) {
         items.push({ kind: 'sep', label: dateSep(ts), key: `sep_${id}` })
       }
 
-      const sameAsPrev = prevMsg && prevMsg.uid === msg.uid && sameDay(ts, prevTs) && (ts - (prevTs)) < 120_000
+      const sameAsPrev = prevMsg && prevMsg.uid === msg.uid && sameDay(ts, prevTs) && (ts - prevTs) < 120_000
       const sameAsNext = nextMsg && nextMsg.uid === msg.uid && sameDay(ts, (nextMsg.ts ?? 0) as number) && ((nextMsg.ts ?? 0) as number - ts) < 120_000
 
-      items.push({
-        kind: 'msg', id, msg,
-        isFirst: !sameAsPrev,
-        isLast: !sameAsNext,
-      })
+      items.push({ kind: 'msg', id, msg, isFirst: !sameAsPrev, isLast: !sameAsNext })
     }
     return items
   }, [messages])
 
-  /* ── RENDER ── */
+  /* ═══════════════════════════════════════════════════════════
+     RENDER
+  ═══════════════════════════════════════════════════════════ */
   return (
     <>
       <style>{`
@@ -470,14 +477,15 @@ export default function ChatArea({ cid, conv }: Props) {
       `}</style>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, position: 'relative' }}>
-        {/* ── MESSAGES LIST ── */}
+
+        {/* ── MESSAGE LIST ── */}
         <div
           ref={msgsRef}
           onScroll={onScroll}
+          onClick={() => setCtxMenu(null)}
           style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, overscrollBehavior: 'contain' }}
-          onClick={() => { setCtxMenu(null) }}
         >
-          {/* Load more indicator */}
+          {/* Pagination indicators */}
           {loadingMore && (
             <div style={{ textAlign: 'center', padding: 12, fontSize: 12, color: 'var(--tx3)', fontFamily: 'var(--mono)' }}>
               Loading older messages…
@@ -489,10 +497,8 @@ export default function ChatArea({ cid, conv }: Props) {
             </div>
           )}
 
-          {/* Encryption banner — top of fresh chats */}
           {messages.length < 3 && <EncryptionBanner isGroup={isGroup} />}
 
-          {/* Empty state */}
           {messages.length === 0 && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--tx3)', gap: 12, padding: '40px 20px', textAlign: 'center' }}>
               <div style={{ fontSize: 52, opacity: .4 }}>💬</div>
@@ -504,7 +510,7 @@ export default function ChatArea({ cid, conv }: Props) {
             </div>
           )}
 
-          {/* Messages + date separators */}
+          {/* Touch handlers on the container, not each bubble */}
           <div
             onTouchStart={e => {
               const target = (e.target as HTMLElement).closest('[data-msgid]') as HTMLElement | null
@@ -525,24 +531,18 @@ export default function ChatArea({ cid, conv }: Props) {
                     isGroup={isGroup}
                     isFirst={isFirst}
                     isLast={isLast}
-                    decryptedText={decrypted[id] ?? ''}
                     cid={cid}
                     onCtx={(e, id, msg, isMine, text) => {
-                      const x = Math.min(e.clientX, window.innerWidth - 195)
-                      const y = Math.min(e.clientY, window.innerHeight - 300)
-                      setCtxMenu({ x, y, id, msg, isMine, text })
+                      setCtxMenu({
+                        x: Math.min(e.clientX, window.innerWidth - 195),
+                        y: Math.min(e.clientY, window.innerHeight - 300),
+                        id, msg, isMine, text,
+                      })
                     }}
                     onReact={addReaction}
                     onShowReactors={(emoji, users) => setReactorSheet({ emoji, users })}
-                    onScrollTo={msgId => {
-                      const el = document.getElementById(`mg_${msgId}`)
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                        el.classList.add('msg-flash')
-                        setTimeout(() => el.classList.remove('msg-flash'), 900)
-                      }
-                    }}
-                    onLightbox={(url, type) => setLightbox({ url, type: type ?? 'image' })}
+                    onScrollTo={onScrollTo}
+                    onLightbox={onLightbox}
                     swipeX={swipeMsgId === id ? swipeX : 0}
                   />
                 </div>
@@ -550,22 +550,18 @@ export default function ChatArea({ cid, conv }: Props) {
             })}
           </div>
 
-          {/* In-progress uploads */}
+          {/* Uploads */}
           {uploads.map(entry => (
             <UploadBubble
               key={entry.id}
               entry={entry}
-              onCancel={() => {
-                entry.task.cancel()
-                setUploads(u => u.filter(e => e.id !== entry.id))
-              }}
+              onCancel={() => { entry.task.cancel(); removeUpload(entry.id) }}
             />
           ))}
 
           {/* Typing indicator */}
           {typingNames.length > 0 && <TypingIndicator names={typingNames} />}
 
-          {/* Bottom anchor */}
           <div style={{ height: 4 }} />
         </div>
 
@@ -586,7 +582,7 @@ export default function ChatArea({ cid, conv }: Props) {
           </div>
         )}
 
-        {/* ── SCROLL TO BOTTOM FAB ── */}
+        {/* ── SCROLL FAB ── */}
         {showScrollFab && !unreadCount && (
           <button
             onClick={() => scrollBottom()}
@@ -607,18 +603,14 @@ export default function ChatArea({ cid, conv }: Props) {
           onFile={f => setAttachment(f, f.type.startsWith('image/') ? 'image' : 'file')}
           onVoice={sendVoice}
           onTyping={onTyping}
-          editingText={editMsgId ? (decrypted[editMsgId] ?? '') : undefined}
+          editingText={editMsgId ? '' : undefined}  // text is read via useDecrypted inside InputBar
           onCancelEdit={() => setEditMsgId(null)}
         />
 
-        {/* ── CONTEXT MENU ── */}
         {ctxMenu && <CtxMenu ctx={ctxMenu} onAction={handleCtxAction} />}
       </div>
 
-      {/* ── REACTOR SHEET ── */}
       {reactorSheet && <ReactorSheet sheet={reactorSheet} onClose={() => setReactorSheet(null)} />}
-
-      {/* ── LIGHTBOX ── */}
       {lightbox && <Lightbox url={lightbox.url} type={lightbox.type} onClose={() => setLightbox(null)} />}
     </>
   )

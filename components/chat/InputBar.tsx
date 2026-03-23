@@ -6,13 +6,18 @@ import React, {
 } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './InputBar.module.css'
+import { Icon } from '../shared/Icons'
+import { useDecrypted, useStore } from '@/lib/store'
 
 /* ─── constants ─── */
 const MAX_CHARS = 4000
 const WARN_CHARS = 3800
 
 /* ─── types ─── */
-interface ReplyTo { senderName: string; text: string }
+interface ReplyTo {
+  senderName: string; text: string
+}
+
 interface Props {
   onSend: (text: string) => void
   onFile: (file: File) => void
@@ -266,9 +271,8 @@ function VoiceBar({ elapsed, onStop, onCancel }: {
    MAIN INPUT BAR
 ══════════════════════════════════════════════════════════════ */
 export default function InputBar({
-  onSend, onFile, onVoice, onGif, onPoll,
+  onSend, onFile, onVoice, onPoll,
   onTyping, editingText, onCancelEdit,
-  replyTo, onClearReply,
 }: Props) {
   const mobile = useIsMobile()
 
@@ -276,10 +280,7 @@ export default function InputBar({
   const [isRec, setIsRec] = useState(false)
   const [recElapsed, setRecElapsed] = useState(0)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [emojiOpen, setEmojiOpen] = useState(false)
-  const [attFile, setAttFile] = useState<File | null>(null)
   const [attPreview, setAttPreview] = useState<string | null>(null)
-  const [attType, setAttType] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -292,6 +293,13 @@ export default function InputBar({
   const typTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const isEditing = editingText !== undefined
+  const {
+    replyTo,
+    setReplyTo,
+    attFile,
+    setAttachment,
+    attType,
+  } = useStore()
 
   useEffect(() => {
     if (editingText !== undefined) {
@@ -299,7 +307,16 @@ export default function InputBar({
       setTimeout(() => { textareaRef.current?.focus(); autoResize() }, 60)
     }
   }, [editingText])
+  useEffect(() => {
+    if (!replyTo) return
 
+    const el = textareaRef.current
+    if (!el) return
+
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
+    autoResize()
+  }, [replyTo])
   useEffect(() => {
     if (attFile && attType === 'image') {
       const url = URL.createObjectURL(attFile)
@@ -322,7 +339,7 @@ export default function InputBar({
   function attachFile(file: File) {
     const type = file.type.startsWith('image/') ? 'image'
       : file.type.startsWith('video/') ? 'video' : 'file'
-    setAttFile(file); setAttType(type); onFile(file)
+    setAttachment(file, type); onFile(file)
   }
 
   function handleSend() {
@@ -330,7 +347,7 @@ export default function InputBar({
     if (!t && !attFile) return
     try { navigator.vibrate?.(10) } catch { }
     onSend(t)
-    setText(''); setAttFile(null); setAttPreview(null); setAttType(null); setEmojiOpen(false)
+    setText(''); setAttachment(null, null); setAttPreview(null);
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
@@ -382,16 +399,6 @@ export default function InputBar({
     attachFile(file); e.target.value = ''
   }
 
-  function insertEmoji(emoji: string) {
-    const el = textareaRef.current
-    const s = el?.selectionStart ?? text.length
-    const en = el?.selectionEnd ?? text.length
-    const next = text.slice(0, s) + emoji + text.slice(en)
-    setText(next)
-    setTimeout(() => { el?.setSelectionRange(s + emoji.length, s + emoji.length); el?.focus(); autoResize() }, 0)
-    setEmojiOpen(false)
-  }
-
   /* Sheet actions */
   const sheetActions: SheetAction[] = [
     {
@@ -407,6 +414,8 @@ export default function InputBar({
       label: 'Document', bg: '#f59e0b', onClick: () => fileRef.current?.click(),
     },
   ]
+
+  const decryptedText = useDecrypted(replyTo?.id)
 
   const charCount = text.length
   const overLimit = charCount > MAX_CHARS
@@ -434,9 +443,12 @@ export default function InputBar({
             <div className={styles.replyBar} />
             <div className={styles.replyInner}>
               <div className={styles.replyName}>↩ {replyTo.senderName}</div>
-              <div className={styles.replyText}>{replyTo.text}</div>
+              <div className={styles.replyText}>{decryptedText}</div>
             </div>
-            <button onClick={onClearReply} className={styles.dismissBtn}>✕</button>
+            <button onClick={(e) => {
+              e.preventDefault();
+              setReplyTo(null)
+            }} className={styles.dismissBtn}>✕</button>
           </div>
         )}
 
@@ -445,13 +457,13 @@ export default function InputBar({
             {attPreview
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={attPreview} alt="" className={styles.attThumb} />
-              : <span className={styles.attIconBox}>{attType === 'video' ? '🎥' : '📎'}</span>
+              : <span className={styles.attIconBox}>{attType === 'video' ? <Icon.Camera /> : <Icon.File />}</span>
             }
             <div className={styles.attInfo}>
               <div className={styles.attName}>{attFile.name}</div>
               <div className={styles.attMeta}>{(attFile.size / 1024).toFixed(1)} KB · {attType}</div>
             </div>
-            <button onClick={() => { setAttFile(null); setAttPreview(null) }} className={styles.attRemove}>✕</button>
+            <button onClick={() => { setAttachment(null, ""); setAttPreview(null) }} className={styles.attRemove}>✕</button>
           </div>
         )}
 
@@ -480,6 +492,7 @@ export default function InputBar({
                 placeholder={isEditing ? 'Edit message…' : 'Message…'}
                 value={text}
                 rows={1}
+
                 className={[styles.textarea, isEditing ? styles.textareaEdit : '', overLimit ? styles.textareaOver : ''].filter(Boolean).join(' ')}
                 onKeyDown={handleKey}
                 onPaste={onPaste}
@@ -492,13 +505,6 @@ export default function InputBar({
                 {MAX_CHARS - charCount}
               </span>
             )}
-
-            <IBtn
-              icon={<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></svg>}
-              onClick={() => { if (mobile) textareaRef.current?.focus(); else setEmojiOpen(p => !p) }}
-              active={emojiOpen && !mobile}
-              title="Emoji"
-            />
 
             {!text.trim() && !attFile && !isEditing
               ? (
@@ -528,8 +534,6 @@ export default function InputBar({
         <input ref={fileRef} type="file" accept="image/*,video/*,audio/*,.pdf,.zip,.txt,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }} onChange={onFileSelect} />
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={onFileSelect} />
       </div>
-
-      {/* Portal bottom sheet — lives on document.body, never clipped */}
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} actions={sheetActions} />
     </>
   )

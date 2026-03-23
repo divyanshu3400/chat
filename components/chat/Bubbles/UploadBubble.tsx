@@ -2,6 +2,7 @@ import { memo } from "react";
 import {
     type UploadTask,
 } from 'firebase/storage'
+import { Icon } from "@/components/shared/Icons";
 
 export interface UploadEntry {
     id: string
@@ -9,7 +10,7 @@ export interface UploadEntry {
     task: UploadTask
     progress: number          // 0-100
     status: 'uploading' | 'done' | 'failed'
-    preview?: string          // object URL for images
+    preview?: string
 }
 
 /* ── UPLOAD PROGRESS BUBBLE ── */
@@ -27,7 +28,7 @@ export const UploadBubble = memo(({ entry, onCancel }: { entry: UploadEntry; onC
             }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={entry.preview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(2px) brightness(.6)' }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📷</div>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}><Icon.Camera/></div>
             </div>
         )}
         <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 8, fontFamily: 'var(--mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

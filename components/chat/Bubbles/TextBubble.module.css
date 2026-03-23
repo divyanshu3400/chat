@@ -1,0 +1,230 @@
+/* TextBubble.module.css */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.wrap {
+    position: relative;
+    padding: 11px 14px 10px;
+    border-radius: 18px;
+    max-width: 420px;
+    min-width: 40px;
+    word-break: break-word;
+    animation: fadeIn 0.22s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+    transition: box-shadow 0.18s;
+}
+
+/* ── SENDER (mine) ── */
+.mine {
+    background: linear-gradient(145deg,
+            color-mix(in srgb, var(--ac, #8b5cf6) 30%, var(--bg1, #0d0d12)) 0%,
+            color-mix(in srgb, var(--ac, #8b5cf6) 14%, var(--bg1, #0d0d12)) 100%);
+    border: 1px solid color-mix(in srgb, var(--ac, #8b5cf6) 35%, transparent);
+    border-radius: 18px 4px 18px 18px;
+    box-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.35),
+        0 1px 0 rgba(255, 255, 255, 0.06) inset,
+        0 0 0 0.5px color-mix(in srgb, var(--ac, #8b5cf6) 20%, transparent) inset;
+}
+
+.mine:hover {
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* ── RECEIVER (theirs) ── */
+.theirs {
+    background: var(--bg2, #141420);
+    border: 1px solid var(--border2, rgba(255, 255, 255, 0.09));
+    border-radius: 4px 18px 18px 18px;
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.04) inset;
+}
+
+.theirs:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.38);
+}
+
+/* Tiny corner accent dot */
+.accentDot {
+    position: absolute;
+    top: -1px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ac, #8b5cf6);
+    box-shadow: 0 0 6px var(--ac-glow, rgba(139, 92, 246, 0.6));
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.mine .accentDot {
+    right: -1px;
+}
+
+.theirs .accentDot {
+    left: -1px;
+}
+
+.wrap:hover .accentDot {
+    opacity: 1;
+}
+
+/* ── Typography ── */
+.content {
+    font-family: var(--font, 'Outfit', system-ui, sans-serif);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--tx, #f0f0f8);
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.mine .content {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.theirs .content {
+    color: var(--tx, #f0f0f8);
+}
+
+/* Collapsed state */
+.contentCollapsed {
+    max-height: 180px;
+    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+}
+
+/* ── Inline formatting ── */
+.content strong,
+.content b {
+    font-weight: 700;
+}
+
+.content em,
+.content i {
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.content u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.content code {
+    font-family: var(--mono, 'JetBrains Mono', monospace);
+    font-size: 12.5px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 5px;
+    padding: 1px 6px;
+}
+
+.mine .content code {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.content pre {
+    font-family: var(--mono, 'JetBrains Mono', monospace);
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 6px 0;
+    line-height: 1.6;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+}
+
+.content blockquote {
+    border-left: 3px solid var(--ac, #8b5cf6);
+    padding-left: 10px;
+    margin: 6px 0;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.content a {
+    color: var(--ac, #8b5cf6);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s;
+}
+
+.content a:hover {
+    opacity: 0.78;
+}
+
+.mine .content a {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.content p {
+    margin: 0 0 4px;
+}
+
+.content p:last-child {
+    margin-bottom: 0;
+}
+
+.content ul,
+.content ol {
+    padding-left: 18px;
+    margin: 4px 0;
+}
+
+.content li {
+    margin-bottom: 2px;
+}
+
+/* ── Expand/Collapse button ── */
+.expandBtn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    font-family: var(--font, 'Outfit', sans-serif);
+    font-size: 11.5px;
+    font-weight: 700;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.15s, transform 0.15s;
+    letter-spacing: 0.01em;
+}
+
+.expandBtn:hover {
+    opacity: 0.75;
+    transform: translateX(1px);
+}
+
+.expandBtnMine {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.expandBtnTheirs {
+    color: var(--ac, #8b5cf6);
+}

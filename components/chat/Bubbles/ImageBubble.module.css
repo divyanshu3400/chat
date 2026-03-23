@@ -1,0 +1,152 @@
+/* ImageBubble.module.css */
+@keyframes shimmerSweep {
+    0% {
+        background-position: -400px 0;
+    }
+
+    100% {
+        background-position: 400px 0;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.wrap {
+    cursor: pointer;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    /* max width respects bubble container */
+    max-width: 320px;
+    min-width: 160px;
+    width: 100%;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s;
+    outline: none;
+}
+
+.wrap:hover {
+    transform: scale(1.015);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.wrap:active {
+    transform: scale(0.985);
+}
+
+.wrap:focus-visible {
+    outline: 2px solid var(--ac, #8b5cf6);
+    outline-offset: 2px;
+}
+
+.mine {
+    border-radius: 18px 4px 18px 18px;
+}
+
+.theirs {
+    border-radius: 4px 18px 18px 18px;
+}
+
+/* Aspect-ratio box trick */
+.ratioBox {
+    position: relative;
+    width: 100%;
+    height: 0;
+    background: var(--bg2, #141420);
+}
+
+.shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.10) 50%,
+            rgba(255, 255, 255, 0.04) 75%);
+    background-size: 400px 100%;
+    animation: shimmerSweep 1.4s ease infinite;
+}
+
+.img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.imgLoaded {
+    opacity: 1;
+    animation: fadeIn 0.28s ease both;
+}
+
+/* Hover sheen */
+.sheen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 55%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.wrap:hover .sheen {
+    opacity: 1;
+}
+
+/* Zoom hint icon */
+.zoomHint {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.wrap:hover .zoomHint {
+    opacity: 1;
+}
+
+/* Error state */
+.error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.errorIcon {
+    font-size: 22px;
+    opacity: 0.4;
+}
+
+.errorText {
+    font-size: 11px;
+    color: var(--tx3, #55556a);
+    font-family: var(--mono, monospace);
+}

@@ -87,41 +87,6 @@
    --tick-read: #7dd3fc;
 }
 
-[data-accent="violet"] {
-   --ac: #7C6EFF;
-   --ac-glow: rgba(124, 110, 255, 0.22);
-   --ac-dim: rgba(124, 110, 255, 0.08);
-}
-
-[data-accent="rose"] {
-   --ac: #FF4E6A;
-   --ac-glow: rgba(255, 78, 106, 0.22);
-   --ac-dim: rgba(255, 78, 106, 0.08);
-}
-
-[data-accent="cyan"] {
-   --ac: #00F5FF;
-   --ac-glow: rgba(0, 245, 255, 0.20);
-   --ac-dim: rgba(0, 245, 255, 0.08);
-}
-
-[data-accent="amber"] {
-   --ac: #FFB830;
-   --ac-glow: rgba(255, 184, 48, 0.22);
-   --ac-dim: rgba(255, 184, 48, 0.08);
-}
-
-[data-accent="emerald"] {
-   --ac: #00F5A0;
-   --ac-glow: rgba(0, 245, 160, 0.20);
-   --ac-dim: rgba(0, 245, 160, 0.08);
-}
-
-[data-accent="indigo"] {
-   --ac: #6366f1;
-   --ac-glow: rgba(99, 102, 241, 0.22);
-   --ac-dim: rgba(99, 102, 241, 0.08);
-}
 
 *,
 *::before,

@@ -518,7 +518,6 @@ export default function CipherApp() {
                 key={activeCid}
                 cid={activeCid}
                 conv={activeConv}
-                onBack={() => setActiveCid(null)}
               />
             </>
           ) : (

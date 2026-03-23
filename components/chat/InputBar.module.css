@@ -2,529 +2,529 @@
    ROOT
 ═══════════════════════════════════════════════════ */
 .root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --border: rgba(255, 255, 255, 0.08);
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --accent: #3b82f6;
-    --danger: #ef4444;
-    --success: #10b981;
-    --btn: 36px;
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #3b82f6;
+  --danger: #ef4444;
+  --success: #10b981;
+  --btn: 36px;
 
-    position: relative;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+  position: relative;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom));
 }
 
 .rootDrag {
-    border-top-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border-top-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 
 .dragOverlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--accent) 14%, transparent);
-    border: 2px dashed var(--accent);
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent);
-    pointer-events: none;
-    z-index: 10;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  pointer-events: none;
+  z-index: 10;
 }
 
 /* ─── edit banner ─── */
 .editBanner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    margin-bottom: 4px;
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-    border-radius: 10px;
-    font-size: 12px;
-    color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--accent);
 }
 
 .editText {
-    flex: 1;
+  flex: 1;
 }
 
 .editKbd {
-    display: inline-block;
-    padding: 1px 5px;
-    background: rgba(255, 255, 255, .1);
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 11px;
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, .1);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
 }
 
 .editCancel {
-    background: none;
-    border: none;
-    color: var(--accent);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 6px;
-    transition: background .15s;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background .15s;
 }
 
 .editCancel:hover {
-    background: rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .08);
 }
 
 /* ─── reply preview ─── */
 .replyPreview {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
-    padding: 6px 10px;
-    margin-bottom: 4px;
-    background: var(--surface);
-    border-radius: 10px;
-    overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .replyBar {
-    width: 3px;
-    border-radius: 2px;
-    background: var(--accent);
-    flex-shrink: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 .replyInner {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .replyName {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 2px;
 }
 
 .replyText {
-    font-size: 12px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dismissBtn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 14px;
-    padding: 0 2px;
-    align-self: center;
-    transition: color .15s;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  align-self: center;
+  transition: color .15s;
 }
 
 .dismissBtn:hover {
-    color: var(--text);
+  color: var(--text);
 }
 
 /* ─── attachment preview ─── */
 .attPreview {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    margin-bottom: 4px;
-    background: var(--surface);
-    border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border-radius: 12px;
 }
 
 .attThumb {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .attIconBox {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, .06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .attInfo {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .attName {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attMeta {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
 }
 
 .attRemove {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 50%;
-    transition: background .15s, color .15s;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background .15s, color .15s;
 }
 
 .attRemove:hover {
-    background: rgba(255, 255, 255, .08);
-    color: var(--danger);
+  background: rgba(255, 255, 255, .08);
+  color: var(--danger);
 }
 
 /* ─── desktop emoji panel ─── */
 .emojiPanel {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 2px;
-    padding: 8px;
-    margin-bottom: 4px;
-    background: var(--surface);
-    border-radius: 12px;
-    border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
 }
 
 .emojiCell {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    line-height: 1;
-    padding: 5px;
-    border-radius: 6px;
-    transition: background .12s, transform .1s;
-    text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 5px;
+  border-radius: 6px;
+  transition: background .12s, transform .1s;
+  text-align: center;
 }
 
 .emojiCell:hover {
-    background: rgba(255, 255, 255, .08);
-    transform: scale(1.2);
+  background: rgba(255, 255, 255, .08);
+  transform: scale(1.2);
 }
 
 /* ─── input row ─── */
 .inputRow {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
 }
 
 /* ─── icon buttons ─── */
 .iBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--btn);
-    height: var(--btn);
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    border-radius: 50%;
-    color: var(--muted);
-    cursor: pointer;
-    transition: background .15s, color .15s, transform .1s;
-    -webkit-tap-highlight-color: transparent;
-    padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn);
+  height: var(--btn);
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
 }
 
 .iBtn:hover {
-    background: rgba(255, 255, 255, .07);
-    color: var(--text);
+  background: rgba(255, 255, 255, .07);
+  color: var(--text);
 }
 
 .iBtn:active {
-    transform: scale(0.88);
+  transform: scale(0.88);
 }
 
 .iBtnActive {
-    color: var(--accent) !important;
+  color: var(--accent) !important;
 }
 
 /* ─── textarea ─── */
 .textareaWrap {
-    flex: 1;
-    min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .textarea {
-    width: 100%;
-    resize: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text);
-    /* 16px prevents iOS Safari auto-zoom on focus */
-    font-size: 16px;
-    line-height: 1.4;
-    padding: 9px 14px;
-    outline: none;
-    font-family: inherit;
-    transition: border-color .2s;
+  width: 100%;
+  resize: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text);
+  /* 16px prevents iOS Safari auto-zoom on focus */
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 9px 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .2s;
 }
 
 @media (min-width: 640px) {
-    .textarea {
-        font-size: 15px;
-    }
+  .textarea {
+    font-size: 15px;
+  }
 }
 
 .textarea::placeholder {
-    color: var(--muted);
+  color: var(--muted);
 }
 
 .textarea:focus {
-    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .textareaEdit {
-    border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent) !important;
 }
 
 .textareaOver {
-    border-color: color-mix(in srgb, var(--danger) 60%, transparent) !important;
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent) !important;
 }
 
 /* ─── char count ─── */
 .charCount {
-    font-size: 11px;
-    font-weight: 600;
-    width: 30px;
-    text-align: center;
-    flex-shrink: 0;
-    align-self: flex-end;
-    margin-bottom: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  width: 30px;
+  text-align: center;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 9px;
 }
 
 .charWarn {
-    color: #f59e0b;
+  color: #f59e0b;
 }
 
 .charOver {
-    color: var(--danger);
+  color: var(--danger);
 }
 
 /* ─── send button ─── */
 .sendBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--btn);
-    height: var(--btn);
-    flex-shrink: 0;
-    border: none;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    cursor: pointer;
-    transition: background .15s, transform .1s, opacity .15s;
-    -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn);
+  height: var(--btn);
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s, transform .1s, opacity .15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sendBtn:hover:not(:disabled) {
-    background: #2563eb;
+  background: #2563eb;
 }
 
 .sendBtn:active:not(:disabled) {
-    transform: scale(0.88);
+  transform: scale(0.88);
 }
 
 .sendEdit {
-    background: var(--success) !important;
+  background: var(--success) !important;
 }
 
 .sendEdit:hover:not(:disabled) {
-    background: #059669 !important;
+  background: #059669 !important;
 }
 
 .sendDisabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* ─── hint (desktop only) ─── */
 .hint {
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    padding: 3px 0 1px;
-    user-select: none;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  padding: 3px 0 1px;
+  user-select: none;
 }
 
 /* ══════════════════════════════════════════════════
    VOICE BAR
 ══════════════════════════════════════════════════ */
 .voiceBar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
 }
 
 .voiceCancel {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .06);
-    border: none;
-    color: var(--danger);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .06);
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s;
 }
 
 .voiceCancel:hover {
-    background: rgba(239, 68, 68, .15);
+  background: rgba(239, 68, 68, .15);
 }
 
 .voiceDot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--danger);
-    flex-shrink: 0;
-    animation: blink 1s step-end infinite;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+  animation: blink 1s step-end infinite;
 }
 
 @keyframes blink {
 
-    0%,
-    100% {
-        opacity: 1
-    }
+  0%,
+  100% {
+    opacity: 1
+  }
 
-    50% {
-        opacity: 0
-    }
+  50% {
+    opacity: 0
+  }
 }
 
 .voiceTime {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    min-width: 36px;
-    flex-shrink: 0;
-    font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 36px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .voiceWave {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    height: 28px;
-    overflow: hidden;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  overflow: hidden;
 }
 
 .waveBar {
-    flex: 1;
-    min-width: 2px;
-    max-width: 3px;
-    border-radius: 2px;
-    background: var(--accent);
-    animation: wave 1.2s ease-in-out infinite;
+  flex: 1;
+  min-width: 2px;
+  max-width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: wave 1.2s ease-in-out infinite;
 }
 
 @keyframes wave {
 
-    0%,
-    100% {
-        height: 4px;
-        opacity: .4
-    }
+  0%,
+  100% {
+    height: 4px;
+    opacity: .4
+  }
 
-    50% {
-        height: 20px;
-        opacity: 1
-    }
+  50% {
+    height: 20px;
+    opacity: 1
+  }
 }
 
 .voiceSend {
-    padding: 0 14px;
-    height: 34px;
-    border-radius: 17px;
-    background: var(--accent);
-    border: none;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background .15s, transform .1s;
+  padding: 0 14px;
+  height: 34px;
+  border-radius: 17px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
 }
 
 .voiceSend:hover {
-    background: #2563eb;
+  background: #2563eb;
 }
 
 .voiceSend:active {
-    transform: scale(0.94);
+  transform: scale(0.94);
 }
 
 /* ══════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════ */
 @media (max-width: 639px) {
-    .root {
-        padding: 4px 6px max(4px, env(safe-area-inset-bottom));
-    }
+  .root {
+    padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+  }
 
-    .iBtn {
-        width: 32px;
-        height: 32px;
-    }
+  .iBtn {
+    width: 32px;
+    height: 32px;
+  }
 
-    .sendBtn {
-        width: 32px;
-        height: 32px;
-    }
+  .sendBtn {
+    width: 32px;
+    height: 32px;
+  }
 
-    .inputRow {
-        gap: 2px;
-    }
+  .inputRow {
+    gap: 2px;
+  }
 
-    .emojiPanel {
-        grid-template-columns: repeat(8, 1fr);
-    }
+  .emojiPanel {
+    grid-template-columns: repeat(8, 1fr);
+  }
 }
 
 @media (min-width: 640px) {
-    .root {
-        padding: 8px 12px max(8px, env(safe-area-inset-bottom));
-    }
+  .root {
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+  }
 
-    .inputRow {
-        gap: 5px;
-    }
+  .inputRow {
+    gap: 5px;
+  }
 }

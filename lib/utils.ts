@@ -359,3 +359,16 @@ export const throttle = <T extends (...args: any[]) => any>(
 export const deepClone = <T extends object>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj))
 }
+
+// ── Utility: strip undefined values recursively ──
+export function stripUndefined<T>(obj: T): T {
+  if (Array.isArray(obj)) return obj.map(stripUndefined) as any
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefined(v)])
+    ) as any
+  }
+  return obj
+}
