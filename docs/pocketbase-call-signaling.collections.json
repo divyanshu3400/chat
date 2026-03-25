@@ -1,0 +1,213 @@
+﻿[
+  {
+    "name": "call_signals",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "call_log",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "REPLACE_WITH_CALL_LOGS_COLLECTION_ID",
+          "cascadeDelete": true,
+          "minSelect": 1,
+          "maxSelect": 1,
+          "displayFields": []
+        }
+      },
+      {
+        "name": "conversation",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "REPLACE_WITH_CONVERSATIONS_COLLECTION_ID",
+          "cascadeDelete": true,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": []
+        }
+      },
+      {
+        "name": "sender",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": ["name","username","email"]
+        }
+      },
+      {
+        "name": "recipient",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": ["name","username","email"]
+        }
+      },
+      {
+        "name": "signal_type",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["offer", "answer"]
+        }
+      },
+      {
+        "name": "side",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["caller", "callee"]
+        }
+      },
+      {
+        "name": "sdp_type",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 0,
+          "max": 20,
+          "pattern": ""
+        }
+      },
+      {
+        "name": "sdp",
+        "type": "editor",
+        "required": true,
+        "options": {
+          "convertUrls": false
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id != ''",
+    "deleteRule": "@request.auth.id != ''",
+    "indexes": [
+      "CREATE INDEX idx_call_signals_call_log_type_created ON call_signals (call_log, signal_type, created)"
+    ]
+  },
+  {
+    "name": "call_ice_candidates",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "call_log",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "REPLACE_WITH_CALL_LOGS_COLLECTION_ID",
+          "cascadeDelete": true,
+          "minSelect": 1,
+          "maxSelect": 1,
+          "displayFields": []
+        }
+      },
+      {
+        "name": "conversation",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "REPLACE_WITH_CONVERSATIONS_COLLECTION_ID",
+          "cascadeDelete": true,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": []
+        }
+      },
+      {
+        "name": "sender",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": ["name","username","email"]
+        }
+      },
+      {
+        "name": "recipient",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "minSelect": 0,
+          "maxSelect": 1,
+          "displayFields": ["name","username","email"]
+        }
+      },
+      {
+        "name": "side",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["caller", "callee"]
+        }
+      },
+      {
+        "name": "candidate",
+        "type": "text",
+        "required": true,
+        "options": {
+          "min": 0,
+          "max": 0,
+          "pattern": ""
+        }
+      },
+      {
+        "name": "sdp_mid",
+        "type": "text",
+        "required": false,
+        "options": {
+          "min": 0,
+          "max": 120,
+          "pattern": ""
+        }
+      },
+      {
+        "name": "sdp_mline_index",
+        "type": "number",
+        "required": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": true
+        }
+      },
+      {
+        "name": "username_fragment",
+        "type": "text",
+        "required": false,
+        "options": {
+          "min": 0,
+          "max": 255,
+          "pattern": ""
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id = sender",
+    "deleteRule": "@request.auth.id = sender",
+    "indexes": [
+      "CREATE INDEX idx_call_ice_candidates_call_log_side_created ON call_ice_candidates (call_log, side, created)"
+    ]
+  }
+]

@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useStore } from '@/src/lib/store'
+import { useStore } from '@/src/store/store'
+import { pb } from '@/src/lib/pb'
+import type { UsersRecord } from '@/src/types/pb-collections.types'
 
 // ── LIGHTBOX ──────────────────────────────────────────────────
 export function Lightbox() {
@@ -39,6 +41,7 @@ export function Lightbox() {
 export function StoryViewer() {
   const { storyViewerOpen, setStoryViewerOpen, activeStory, me } = useStore()
   const [progress, setProgress] = useState(0)
+  const [owner, setOwner] = useState<UsersRecord | null>(null)
 
   useEffect(() => {
     if (!storyViewerOpen) { setProgress(0); return }
@@ -53,7 +56,30 @@ export function StoryViewer() {
     return () => cancelAnimationFrame(raf)
   }, [storyViewerOpen, activeStory])
 
+  useEffect(() => {
+    if (!activeStory?.owner) {
+      setOwner(activeStory?.owner === me?.id ? me : null)
+      return
+    }
+    if (activeStory.owner === me?.id) {
+      setOwner(me)
+      return
+    }
+
+    let alive = true
+    pb.collection('users').getOne<UsersRecord>(activeStory.owner)
+      .then((u) => { if (alive) setOwner(u) })
+      .catch(() => { })
+
+    return () => { alive = false }
+  }, [activeStory?.owner, me])
+
   if (!storyViewerOpen || !activeStory) return null
+
+  const photoUrl = owner?.avatar ? pb.files.getURL(owner, owner.avatar).toString() : ''
+  const displayName = owner?.name?.trim() || owner?.username?.trim() || owner?.email || 'Story'
+  const displayInitial = displayName[0]?.toUpperCase() || '?'
+  const imageUrl = activeStory.media ? pb.files.getURL(activeStory, activeStory.media).toString() : ''
 
   return (
     <div style={{
@@ -72,17 +98,25 @@ export function StoryViewer() {
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '8px 16px', position: 'absolute', top: 32, left: 0, right: 0,
       }}>
-        <img src={activeStory.photoURL} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff' }} />
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', flex: 1 }}>{activeStory.displayName}</div>
+        {photoUrl ? (
+          <img src={photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff' }} />
+        ) : (
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--glass2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', border: '2px solid #fff' }}>
+            {displayInitial}
+          </div>
+        )}
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', flex: 1 }}>{displayName}</div>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(255,255,255,.6)' }}>
-          {new Date(activeStory.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {new Date(activeStory.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
         <button onClick={() => setStoryViewerOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer' }}>✕</button>
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <img src={activeStory.imageURL} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        {imageUrl ? (
+          <img src={imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        ) : null}
         <div
           style={{ position: 'absolute', left: 0, top: 0, width: '40%', height: '100%', cursor: 'pointer' }}
           onClick={() => setStoryViewerOpen(false)}

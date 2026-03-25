@@ -1,18 +1,37 @@
 'use client'
 
-import {
-  useState, useEffect, useRef,
-  useMemo, memo, type KeyboardEvent,
-} from 'react'
-import { useStore } from '@/src/lib/store'
-import { useConvCtx } from '@/src/lib/ui'
-import { fmtTime } from '@/src/lib/utils'
-import type { Conversation, Story } from '@/src/types'
-import { Avatar } from '../shared'
-import styles from './Sidebar.module.css'
-import { Archive, BellOff, CloudLightning, Edit, Group, Lock, Pin, Search, Settings, Trash2, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { shallow } from 'zustand/shallow'
 
-interface Props {
+import { useStore } from '@/src/store/store'
+import { createChatService } from '@/src/services/pb-chat.service'
+import { pb } from '@/src/lib/pb'
+
+import styles from './Sidebar.module.css'
+import { CloudLightning, GroupIcon, Search, Settings, UserPlus2, X } from 'lucide-react'
+
+import type {
+  ConversationMembersRecord,
+  ConversationsRecord,
+  MessageBundle,
+  MessageStateItem,
+  PresenceRecord,
+  UsersRecord,
+} from '@/src/store/store'
+import { useConvCtx } from '@/src/lib/ui'
+import { isMobileDevice } from '@/src/lib/utils'
+import { ConvContextMenu } from './ConvContextMenu'
+import BottomNav from './MobileBottomNav'
+import { SkeletonCard } from './SkeletonCard'
+import { SidebarEmpty } from './SidebarEmpty'
+import { StoriesRow } from './StoriesRow'
+import { Avatar } from '../shared'
+import { ConvRow } from './ConvRow'
+import { useShallow } from 'zustand/react/shallow'
+
+type Tab = 'all' | 'dms' | 'groups' | 'starred' | 'unread'
+
+type Props = {
   onNewChat: () => void
   onNewGroup: () => void
   onProfile: () => void
@@ -20,389 +39,399 @@ interface Props {
   onOpenChat: (cid: string) => void
 }
 
-type Tab = 'all' | 'dms' | 'groups' | 'starred' | 'unread'
-
-/* ── Skeleton ── */
-const SkeletonCard = memo(({ delay = 0 }: { delay?: number }) => (
-  <div className={styles.skeletonCard} style={{ animationDelay: `${delay}s` }}>
-    <div className={styles.skeletonAvatar} />
-    <div className={styles.skeletonLines}>
-      <div className={styles.skeletonLine} style={{ width: '55%' }} />
-      <div className={styles.skeletonLine} style={{ width: '80%' }} />
-    </div>
-  </div>
-))
-SkeletonCard.displayName = 'SkeletonCard'
-
-/* ── Stories Row ── */
-const StoriesRow = memo(({ onAddStory }: { onAddStory: () => void }) => {
-  const { stories = [], me, setActiveStory, setStoryViewerOpen } = useStore()
-  const now = Date.now()
-  const valid = stories.filter((s: Story) => now - s.ts < 86_400_000 && s.uid !== me?.uid)
-
-  return (
-    <div className={styles.storiesRow}>
-      <button onClick={onAddStory} className={styles.storyBtn}>
-        <div className={styles.myStoryRing}>
-          {me?.photoURL && <img src={me.photoURL} alt="" className={styles.myStoryPhoto} />}
-          <div className={styles.myStoryPlus}>+</div>
-        </div>
-        <span className={`${styles.storyLabel} ${styles.storyLabelSeen}`}>You</span>
-      </button>
-
-      {valid.map((s: Story) => {
-        const seen = s.seenBy?.[me?.uid ?? '']
-        return (
-          <button
-            key={s.uid}
-            onClick={() => { setActiveStory(s); setStoryViewerOpen(true) }}
-            className={styles.storyBtn}
-          >
-            <div className={`${styles.storyRingWrap} ${seen ? styles.storyRingSeen : styles.storyRingUnseen}`}>
-              <img src={s.photoURL} alt={s.displayName} className={styles.storyImg} />
-            </div>
-            <span className={`${styles.storyLabel} ${seen ? styles.storyLabelSeen : styles.storyLabelUnseen}`}>
-              {s.displayName.split(' ')[0]}
-            </span>
-          </button>
-        )
-      })}
-      {valid.length === 0 && (
-        <div className={styles.storiesEmpty}>
-          <span className={styles.storiesEmptyDot} />
-          No new stories
-        </div>
-      )}
-    </div>
-  )
-})
-StoriesRow.displayName = 'StoriesRow'
-
-/* ── Conversation Row ── */
-interface ConvRowProps {
-  cid: string
-  conv: Conversation
-  isActive: boolean
-  isOnline: boolean
-  focused: boolean
-  onOpen: (cid: string) => void
-  onCtx: (cid: string, x: number, y: number) => void
+type SidebarConversationView = {
+  id: string
+  name: string
+  subtitle: string
+  photo: string
+  isGroup: boolean
+  otherUid: string | null
+  unread: number
+  starred: boolean
+  pinned: boolean
+  muted: boolean
+  archived: boolean
+  updatedAt: number
+  lastMsg: string
+  source: ConversationsRecord
+  member: ConversationMembersRecord | null
+  otherUser: UsersRecord | null
+  lastMessage: MessageStateItem['message'] | null
 }
 
-const ConvRow = memo(({ cid, conv, isActive, isOnline, focused, onOpen, onCtx }: ConvRowProps) => {
-  const name = conv.isGroup ? (conv.name ?? 'Group') : (conv.otherName ?? 'Unknown')
-  const photo = conv.isGroup ? undefined : conv.otherPhoto ?? undefined
-  const unread = conv.unread ?? 0
-  const preview = conv.lastMsg ? conv.lastMsg.substring(0, 42) : 'No messages yet'
-
-  const lpRef = useRef<ReturnType<typeof setTimeout>>()
-  function onTouchStart(e: React.TouchEvent) {
-    lpRef.current = setTimeout(() => {
-      const t = e.touches[0]
-      onCtx(cid, t.clientX, t.clientY)
-    }, 500)
+function getUserAvatar(user: UsersRecord | null): string {
+  if (!user?.avatar) {
+    return ''
   }
-  function onTouchEnd() { clearTimeout(lpRef.current) }
 
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-selected={isActive}
-      onClick={() => onOpen(cid)}
-      onContextMenu={e => { e.preventDefault(); onCtx(cid, e.clientX, e.clientY) }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onOpen(cid) }}
-      className={[
-        styles.convRow,
-        isActive ? styles.convRowActive : styles.convRowDefault,
-        focused && !isActive ? styles.convRowFocused : '',
-        conv.archived ? styles.convRowArchived : '',
-      ].filter(Boolean).join(' ')}
-    >
-      {/* Active glow bar */}
-      {isActive && <div className={styles.convActiveBar} />}
-
-      <div className={styles.avatarWrap}>
-        <Avatar name={name} photo={photo} size={46} isGroup={conv.isGroup} />
-        {!conv.isGroup && (
-          <div className={`${styles.presenceDot} ${isOnline ? styles.presenceDotOnline : styles.presenceDotOffline}`} />
-        )}
-      </div>
-
-      <div className={styles.convText}>
-        <div className={styles.convNameRow}>
-          <span className={[
-            styles.convName,
-            unread > 0 ? styles.convNameUnread : '',
-            isActive ? styles.convNameActive : '',
-          ].filter(Boolean).join(' ')}>
-            {name}
-          </span>
-          <span className={styles.convTime}>{conv.updatedAt ? fmtTime(conv.updatedAt) : ''}</span>
-        </div>
-        <div className={styles.convPreviewRow}>
-          <span className={styles.convPreview}>
-            <span className={styles.lockIcon}><Lock /></span>
-            <span className={styles.previewText}>{preview}</span>
-          </span>
-          <div className={styles.convMeta}>
-            {conv.muted && (
-              <span className={styles.metaIcon}>
-                <BellOff size={16} />
-              </span>
-            )}
-
-            {conv.pinned && (
-              <span className={`${styles.metaIcon} ${styles.pinIcon}`}>
-                <Pin size={16} />
-              </span>
-            )}
-
-            {unread > 0 && (
-              <span className={`${styles.unreadBadge} ${conv.muted ? styles.unreadBadgeMuted : ''}`}>
-                {unread > 99 ? '99+' : unread}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-})
-ConvRow.displayName = 'ConvRow'
-
-/* ── Context Menu ── */
-interface ConvCtxMenuProps {
-  cid: string; x: number; y: number
-  conv: Conversation | undefined
-  onClose: () => void
-  onAction: (cid: string, action: string) => void
+  try {
+    return pb.files.getURL(user, user.avatar).toString()
+  } catch {
+    return ''
+  }
 }
 
-const ConvContextMenu = memo(({ cid, x, y, conv, onClose, onAction }: ConvCtxMenuProps) => {
-  if (!conv) return null
-  const mW = 200, mH = 230
-  const W = typeof window !== 'undefined' ? window.innerWidth : 400
-  const H = typeof window !== 'undefined' ? window.innerHeight : 800
-  const left = Math.min(x, W - mW - 8)
-  const top = Math.min(y, H - mH - 8)
+function getConversationName(item: {
+  source: ConversationsRecord
+  otherUser: UsersRecord | null
+}): string {
+  if (item.source.type === 'group') {
+    return item.source.name?.trim() || 'Untitled group'
+  }
 
-  const items = [
-    {
-      key: 'pin',
-      icon: <Pin size={16} />,
-      label: conv.pinned ? 'Unpin' : 'Pin chat',
-      danger: false
-    },
-    {
-      key: 'mute',
-      icon: <BellOff size={16} />,
-      label: conv.muted ? 'Unmute' : 'Mute',
-      danger: false
-    },
-    {
-      key: 'archive',
-      icon: <Archive size={16} />,
-      label: conv.archived ? 'Unarchive' : 'Archive',
-      danger: false
-    },
-    {
-      key: 'delete',
-      icon: <Trash2 size={16} />,
-      label: 'Delete chat',
-      danger: true
+  return item.otherUser?.name?.trim() || item.otherUser?.username?.trim() || item.otherUser?.email || 'Unknown user'
+}
+
+function getLastMessageText(bundle: MessageBundle['message'] | null): string {
+  if (!bundle) {
+    return ''
+  }
+
+  if (bundle.is_deleted) {
+    return 'Message deleted'
+  }
+
+  if (bundle.content?.trim()) {
+    return bundle.content
+  }
+
+  if ((bundle.attachments?.length ?? 0) > 0) {
+    return 'Attachment'
+  }
+
+  return ''
+}
+
+function buildSidebarConversationView(
+  currentUserId: string | null,
+  id: string,
+  item: {
+    bundle: {
+      conversation: ConversationsRecord
+      members: ConversationMembersRecord[]
     }
-  ]
-  return (
-    <>
-      <div onClick={onClose} className={styles.ctxBackdrop} />
-      <div className={styles.ctxMenu} style={{ left, top }}>
-        <div className={styles.ctxHeader}>
-          <div className={styles.ctxHeaderAvatar}>
-            <Avatar name={conv.isGroup ? conv.name ?? 'G' : conv.otherName ?? '?'} photo={conv.isGroup ? undefined : conv.otherPhoto ?? undefined} size={32} isGroup={conv.isGroup} />
-          </div>
-          <div className={styles.ctxHeaderName}>{conv.isGroup ? conv.name : conv.otherName}</div>
-        </div>
-        {items.map(item => (
-          <div
-            key={item.key}
-            onClick={() => { onAction(cid, item.key); onClose() }}
-            className={`${styles.ctxItem} ${item.danger ? styles.ctxItemDanger : ''}`}
-          >
-            <span className={styles.ctxItemIcon}>{item.icon}</span>
-            {item.label}
-          </div>
-        ))}
-      </div>
-    </>
-  )
-})
-ConvContextMenu.displayName = 'ConvContextMenu'
+    otherUser: UsersRecord | null
+    lastMessage: MessageBundle['message'] | null
+  },
+): SidebarConversationView {
+  const member =
+    (currentUserId
+      ? item.bundle.members.find((entry) => entry.user === currentUserId) ?? null
+      : null)
 
-/* ── Empty State ── */
-type EmptyKind = 'no-convs' | 'no-results' | 'error'
-const SidebarEmpty = memo(({ kind, onAction }: { kind: EmptyKind; onAction?: () => void }) => {
-  const cfg = {
-    'no-convs': { icon: '✦', title: 'No conversations yet', body: 'Start a chat or create a group to get going.', cta: 'New Chat' },
-    'no-results': { icon: '◎', title: 'Nothing found', body: 'Try a different name or message snippet.', cta: null },
-    'error': { icon: '⚠', title: 'Failed to load', body: 'Something went wrong loading your chats.', cta: 'Retry' },
-  }[kind]
+  const updatedAt = Date.parse(item.lastMessage?.created ?? item.bundle.conversation.updated)
 
-  return (
-    <div className={styles.emptyState}>
-      <div className={styles.emptyIcon}>{cfg.icon}</div>
-      <div className={styles.emptyTitle}>{cfg.title}</div>
-      <div className={styles.emptyBody}>{cfg.body}</div>
-      {cfg.cta && onAction && (
-        <button onClick={onAction} className={`${styles.emptyCta} ${kind !== 'error' ? styles.emptyCtaAccent : styles.emptyCtaNeutral}`}>
-          {cfg.cta}
-        </button>
-      )}
-    </div>
-  )
-})
-SidebarEmpty.displayName = 'SidebarEmpty'
+  return {
+    id,
+    name: getConversationName({
+      source: item.bundle.conversation,
+      otherUser: item.otherUser,
+    }),
+    subtitle: item.otherUser?.email ?? item.bundle.conversation.description ?? '',
+    photo: item.bundle.conversation.type === 'group' ? '' : getUserAvatar(item.otherUser),
+    isGroup: item.bundle.conversation.type === 'group',
+    otherUid: item.otherUser?.id ?? null,
+    unread: 0,
+    starred: false,
+    pinned: false,
+    muted: !!member?.is_muted,
+    archived: !!item.bundle.conversation.is_archived,
+    updatedAt: Number.isFinite(updatedAt) ? updatedAt : 0,
+    lastMsg: getLastMessageText(item.lastMessage),
+    source: item.bundle.conversation,
+    member,
+    otherUser: item.otherUser,
+    lastMessage: item.lastMessage,
+  }
+}
 
-/* ── Bottom Nav ── */
-interface BottomNavProps { tab: Tab; onTab: (t: Tab) => void; unread: number; onNewChat: () => void; onSettings: () => void }
-const BottomNav = memo(({ tab, onTab, unread, onNewChat, onSettings }: BottomNavProps) => {
-  const navItems = [
-    { key: 'all' as Tab, icon: '💬', label: 'Chats', badge: unread },
-    { key: 'groups' as Tab, icon: '👥', label: 'Groups', badge: 0 },
-    { key: 'compose', icon: '✦', label: 'New', badge: 0, action: onNewChat },
-    { key: 'starred' as Tab, icon: '⭐', label: 'Saved', badge: 0 },
-    { key: 'settings', icon: '⚙️', label: 'Config', badge: 0, action: onSettings },
-  ] as const
-
-  return (
-    <nav className={styles.bottomNav}>
-      {navItems.map(item => {
-        const isActive = 'action' in item ? false : tab === item.key
-        const handleTap = 'action' in item ? item.action : () => onTab(item.key as Tab)
-        const isCenterAction = item.key === 'compose'
-        return (
-          <button
-            key={item.key}
-            onClick={handleTap}
-            className={`${styles.bottomNavItem} ${isActive ? styles.bottomNavItemActive : ''} ${isCenterAction ? styles.bottomNavCenter : ''}`}
-          >
-            <span className={styles.bottomNavIcon}>{item.icon}</span>
-            <span className={styles.bottomNavLabel}>{item.label}</span>
-            {item.badge > 0 && <span className={styles.bottomNavBadge}>{item.badge > 9 ? '9+' : item.badge}</span>}
-          </button>
-        )
-      })}
-    </nav>
-  )
-})
-BottomNav.displayName = 'BottomNav'
-
-/* ══════════════════════════════════════
-   MAIN SIDEBAR
-══════════════════════════════════════ */
-export default function Sidebar({ onNewChat, onNewGroup, onProfile, onSettings, onOpenChat }: Props) {
-  const {
-    me, conversations = {}, activeCid,
-    sidebarOpen, setSidebarOpen,
-    sbTab: storeTab, setSbTab,
-    searchQuery, setSearchQuery,
-    presence = {},
-    convsLoading = false, convsError = null,
-    refetchConvs, updateConversation,
-  } = useStore()
-
+export default function Sidebar({
+  onNewChat,
+  onNewGroup,
+  onProfile,
+  onSettings,
+  onOpenChat,
+}: Props) {
+  const chatService = useMemo(() => createChatService(pb), [])
+  const isMobile = isMobileDevice()
   const { convCtx, openConvCtx, closeConvCtx } = useConvCtx()
-  const [tab, setTabLocal] = useState<Tab>((storeTab as Tab) ?? 'all')
+
+  const {
+    me,
+    conversations,
+    activeCid,
+    sidebarOpen,
+    setSidebarOpen,
+    sbTab,
+    setSbTab,
+    searchQuery,
+    setSearchQuery,
+    presence,
+    convsLoading,
+    convsError,
+    refetchConvs,
+    updateConversation,
+    showToast,
+  } = useStore(
+    useShallow((state) => ({
+      me: state.me,
+      conversations: state.conversations,
+      activeCid: state.activeCid,
+      sidebarOpen: state.sidebarOpen,
+      setSidebarOpen: state.setSidebarOpen,
+      sbTab: state.sbTab,
+      setSbTab: state.setSbTab,
+      searchQuery: state.searchQuery,
+      setSearchQuery: state.setSearchQuery,
+      presence: state.presence,
+      convsLoading: state.convsLoading,
+      convsError: state.convsError,
+      refetchConvs: state.refetchConvs,
+      updateConversation: state.updateConversation,
+      showToast: state.showToast,
+    }))
+  );
+
+  const [tab, setTabLocal] = useState<Tab>(sbTab)
   const [focusedIdx, setFocusedIdx] = useState(-1)
   const [searchFocused, setSearchFocused] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
-
-  function setTab(t: Tab) { setTabLocal(t); setSbTab(t) }
+  const swipeX0 = useRef(0)
 
   useEffect(() => {
-    function onKey(e: globalThis.KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault(); searchRef.current?.focus(); setSidebarOpen(true)
+    setTabLocal(sbTab)
+  }, [sbTab])
+
+  useEffect(() => {
+    function onKey(event: globalThis.KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        searchRef.current?.focus()
+        setSidebarOpen(true)
       }
     }
+
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [setSidebarOpen])
 
-  const convs = useMemo<[string, Conversation][]>(() => {
-    let entries = Object.entries(conversations) as [string, Conversation][]
-    if (tab === 'dms') entries = entries.filter(([, c]) => !c.isGroup)
-    if (tab === 'groups') entries = entries.filter(([, c]) => c.isGroup)
-    if (tab === 'starred') entries = entries.filter(([, c]) => c.starred)
-    if (tab === 'unread') entries = entries.filter(([, c]) => (c.unread ?? 0) > 0)
-    const q = searchQuery.trim().toLowerCase()
-    if (q) entries = entries.filter(([, c]) => {
-      const name = (c.isGroup ? c.name : c.otherName) ?? ''
-      return name.toLowerCase().includes(q) || (c.lastMsg ?? '').toLowerCase().includes(q)
-    })
+  function setTab(nextTab: Tab) {
+    setTabLocal(nextTab)
+    setSbTab(nextTab)
+  }
+
+  const views = useMemo(() => {
+    return Object.entries(conversations).map(([id, item]) =>
+      [id, buildSidebarConversationView(me?.id ?? null, id, item)] as const,
+    )
+  }, [conversations, me?.id])
+
+  const filteredConvs = useMemo(() => {
+    let entries = [...views]
+
+    if (tab === 'dms') {
+      entries = entries.filter(([, conv]) => !conv.isGroup)
+    }
+
+    if (tab === 'groups') {
+      entries = entries.filter(([, conv]) => conv.isGroup)
+    }
+
+    if (tab === 'starred') {
+      entries = entries.filter(([, conv]) => conv.starred)
+    }
+
+    if (tab === 'unread') {
+      entries = entries.filter(([, conv]) => conv.unread > 0)
+    }
+
+    const query = searchQuery.trim().toLowerCase()
+    if (query) {
+      entries = entries.filter(([, conv]) => {
+        return (
+          conv.name.toLowerCase().includes(query) ||
+          conv.lastMsg.toLowerCase().includes(query) ||
+          conv.subtitle.toLowerCase().includes(query)
+        )
+      })
+    }
+
     return entries.sort((a, b) => {
-      if (!!b[1].pinned !== !!a[1].pinned) return b[1].pinned ? 1 : -1
-      return (b[1].updatedAt ?? 0) - (a[1].updatedAt ?? 0)
+      if (b[1].pinned !== a[1].pinned) {
+        return b[1].pinned ? 1 : -1
+      }
+
+      return b[1].updatedAt - a[1].updatedAt
     })
-  }, [conversations, tab, searchQuery])
+  }, [views, tab, searchQuery])
 
-  const totalUnread = useMemo(() =>
-    Object.values(conversations).reduce((acc, c) => acc + ((c as Conversation).unread ?? 0), 0)
-    , [conversations])
+  const totalUnread = useMemo(
+    () => filteredConvs.reduce((count, [, conv]) => count + conv.unread, 0),
+    [filteredConvs],
+  )
 
-  const pinnedConvs = convs.filter(([, c]) => c.pinned)
-  const recentConvs = convs.filter(([, c]) => !c.pinned)
+  const pinnedConvs = filteredConvs.filter(([, conv]) => conv.pinned)
+  const recentConvs = filteredConvs.filter(([, conv]) => !conv.pinned)
 
-  function onSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIdx(0); listRef.current?.querySelector<HTMLElement>('[role=button]')?.focus() }
-    if (e.key === 'Escape') { setSearchQuery(''); searchRef.current?.blur() }
-  }
-  function onListKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIdx(i => Math.min(i + 1, convs.length - 1)) }
-    if (e.key === 'ArrowUp') { e.preventDefault(); if (focusedIdx <= 0) { setFocusedIdx(-1); searchRef.current?.focus() } else setFocusedIdx(i => i - 1) }
-    if (e.key === 'Enter' && focusedIdx >= 0 && convs[focusedIdx]) openChat(convs[focusedIdx][0])
-  }
+  function onSearchKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setFocusedIdx(0)
+      listRef.current?.querySelector<HTMLElement>('[role=button]')?.focus()
+    }
 
-  function handleConvAction(cid: string, action: string) {
-    const conv = conversations[cid] as Conversation | undefined
-    if (!conv) return
-    switch (action) {
-      case 'pin': updateConversation(cid, { pinned: !conv.pinned }); break
-      case 'mute': updateConversation(cid, { muted: !conv.muted }); break
-      case 'archive': updateConversation(cid, { archived: !conv.archived }); break
-      case 'delete': if (confirm(`Delete chat?`)) updateConversation(cid, null); break
+    if (event.key === 'Escape') {
+      setSearchQuery('')
+      searchRef.current?.blur()
     }
   }
 
-  function openChat(cid: string) { onOpenChat(cid); setSidebarOpen(false) }
+  function onListKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setFocusedIdx((index) => Math.min(index + 1, filteredConvs.length - 1))
+    }
 
-  const swipeX0 = useRef(0)
-  function onTouchStart(e: React.TouchEvent) { swipeX0.current = e.touches[0].clientX }
-  function onTouchEnd(e: React.TouchEvent) { if (e.changedTouches[0].clientX - swipeX0.current < -70) setSidebarOpen(false) }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (focusedIdx <= 0) {
+        setFocusedIdx(-1)
+        searchRef.current?.focus()
+      } else {
+        setFocusedIdx((index) => index - 1)
+      }
+    }
 
-  const tabs: { key: Tab; label: string }[] = [
+    if (event.key === 'Enter' && focusedIdx >= 0 && filteredConvs[focusedIdx]) {
+      openChat(filteredConvs[focusedIdx][0])
+    }
+  }
+
+  async function handleConvAction(cid: string, action: string) {
+    const item = conversations[cid]
+    if (!item || !me) {
+      return
+    }
+
+    const ownMembership =
+      item.bundle.members.find((member) => member.user === me.id) ??
+      null
+
+    try {
+      switch (action) {
+        case 'pin': {
+          showToast('Pinning is not persisted in the PocketBase schema yet.')
+          break
+        }
+
+        case 'mute': {
+          if (!ownMembership?.id) {
+            showToast('Membership record not found for this conversation.')
+            return
+          }
+
+          await chatService.updateConversationMember(ownMembership.id, {
+            is_muted: !ownMembership.is_muted,
+          })
+
+          await refetchConvs()
+          break
+        }
+
+        case 'archive': {
+          await chatService.updateConversation(cid, {
+            is_archived: !item.bundle.conversation.is_archived,
+          })
+
+          updateConversation(cid, {
+            is_archived: !item.bundle.conversation.is_archived,
+          })
+          break
+        }
+
+        case 'delete': {
+          if (!confirm('Delete chat?')) {
+            return
+          }
+
+          await chatService.deleteConversation(cid)
+          updateConversation(cid, null)
+          break
+        }
+      }
+    } catch (error) {
+      console.warn('[Sidebar] conversation action failed:', error)
+      showToast('Conversation action failed.')
+    }
+  }
+
+  function openChat(cid: string) {
+    onOpenChat(cid)
+    setSidebarOpen(false)
+  }
+
+  function onTouchStart(event: React.TouchEvent) {
+    swipeX0.current = event.touches[0].clientX
+  }
+
+  function onTouchEnd(event: React.TouchEvent) {
+    if (event.changedTouches[0].clientX - swipeX0.current < -70) {
+      setSidebarOpen(false)
+    }
+  }
+
+  const tabs: Array<{ key: Tab; label: string }> = [
     { key: 'all', label: 'All' },
     { key: 'dms', label: 'DMs' },
     { key: 'groups', label: 'Groups' },
-    { key: 'starred', label: '★' },
+    { key: 'starred', label: '*' },
     { key: 'unread', label: 'Unread' },
   ]
 
-  function renderConvRows(rows: [string, Conversation][], idxOffset: number) {
-    return rows.map(([cid, conv], i) => (
+  function toRowProps(conv: SidebarConversationView) {
+    return {
+      id: conv.id,
+      isGroup: conv.isGroup,
+      name: conv.isGroup ? conv.name : undefined,
+      otherName: conv.isGroup ? undefined : conv.name,
+      otherUid: conv.otherUid ?? undefined,
+      otherPhoto: conv.photo,
+      lastMsg: conv.lastMsg,
+      pinned: conv.pinned,
+      muted: conv.muted,
+      archived: conv.archived,
+      starred: conv.starred,
+      unread: conv.unread,
+      updatedAt: conv.updatedAt,
+    }
+  }
+
+  function isOnline(conv: SidebarConversationView, map: Record<string, PresenceRecord>) {
+    if (!conv.otherUid) {
+      return false
+    }
+
+    return !!map[conv.otherUid]?.online
+  }
+
+  function renderConvRows(rows: ReadonlyArray<readonly [string, SidebarConversationView]>, idxOffset: number) {
+    return rows.map(([cid, conv], index) => (
       <ConvRow
-        key={cid} cid={cid} conv={conv}
+        key={cid}
+        cid={cid}
+        conv={toRowProps(conv) as never}
         isActive={cid === activeCid}
-        isOnline={!!(conv.otherUid && presence[conv.otherUid]?.online)}
-        focused={focusedIdx === idxOffset + i}
+        isOnline={isOnline(conv, presence)}
+        focused={focusedIdx === idxOffset + index}
         onOpen={openChat}
-        onCtx={(cid, x, y) => openConvCtx({ cid, x, y })}
+        onCtx={(nextCid, x, y) => openConvCtx({ cid: nextCid, x, y })}
       />
     ))
   }
+
+  const currentUserName = me?.name?.trim() || me?.username || me?.email || 'User'
+  const currentUserPhoto = getUserAvatar(me)
 
   return (
     <>
@@ -414,30 +443,34 @@ export default function Sidebar({ onNewChat, onNewGroup, onProfile, onSettings, 
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Ambient gradient orbs */}
         <div className={styles.ambientOrb1} />
         <div className={styles.ambientOrb2} />
 
-        {/* ── HEADER ── */}
         <div className={styles.header}>
           <div className={styles.headerTop}>
             <button onClick={onProfile} className={styles.profileChip}>
               <div className={styles.profileAvatarRing}>
-                <Avatar name={me?.displayName ?? '?'} photo={me?.photoURL} size={38} ring />
+                <Avatar
+                  name={currentUserName}
+                  photo={currentUserPhoto}
+                  size={38}
+                  ring
+                />
                 <div className={styles.profileOnlineDot} />
               </div>
+
               <div className={styles.profileInfo}>
-                <div className={styles.profileName}>{me?.displayName ?? 'User'}</div>
+                <div className={styles.profileName}>{currentUserName}</div>
                 {me?.email && <div className={styles.profileEmail}>{me.email}</div>}
               </div>
             </button>
 
             <div className={styles.headerActions}>
               <button className={styles.headerBtn} onClick={onNewChat} title="New chat">
-                <Edit />
+                <UserPlus2 />
               </button>
               <button className={styles.headerBtn} onClick={onNewGroup} title="New group">
-                <Group />
+                <GroupIcon />
               </button>
               <button className={styles.headerBtn} onClick={onSettings} title="Settings">
                 <Settings />
@@ -445,56 +478,67 @@ export default function Sidebar({ onNewChat, onNewGroup, onProfile, onSettings, 
             </div>
           </div>
 
-          {/* Search */}
           <div className={`${styles.searchBox} ${searchFocused ? styles.searchBoxFocused : ''}`}>
             <span className={styles.searchIcon}><Search /></span>
             <input
               ref={searchRef}
-              placeholder="Search… (⌘K)"
+              placeholder="Search... (Ctrl/Cmd+K)"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               onKeyDown={onSearchKeyDown}
               className={styles.searchInput}
             />
             {searchQuery && (
-              <button onClick={() => { setSearchQuery(''); searchRef.current?.focus() }} className={styles.searchClear}>
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  searchRef.current?.focus()
+                }}
+                className={styles.searchClear}
+              >
                 <X />
               </button>
             )}
           </div>
         </div>
 
-        {/* ── STORIES ── */}
-        <StoriesRow onAddStory={() => { }} />
+        <StoriesRow onAddStory={() => undefined} />
 
-        {/* ── TABS ── */}
         <div className={styles.tabBar}>
-          {tabs.map(t => {
-            const isActive = tab === t.key
-            const showBadge = t.key === 'unread' && totalUnread > 0
+          {tabs.map((item) => {
+            const isActive = tab === item.key
+            const showBadge = item.key === 'unread' && totalUnread > 0
+
             return (
               <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
+                key={item.key}
+                onClick={() => setTab(item.key)}
                 className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
               >
-                {t.label}
-                {showBadge && <span className={styles.tabBadge}>{totalUnread > 9 ? '9+' : totalUnread}</span>}
+                {item.label}
+                {showBadge && (
+                  <span className={styles.tabBadge}>
+                    {totalUnread > 9 ? '9+' : totalUnread}
+                  </span>
+                )}
               </button>
             )
           })}
         </div>
 
-        {/* ── CONVERSATION LIST ── */}
         <div ref={listRef} className={styles.convList} onKeyDown={onListKeyDown}>
           {convsLoading && !Object.keys(conversations).length && (
-            <>{[0, 0.12, 0.24, 0.36].map((d, i) => <SkeletonCard key={i} delay={d} />)}</>
+            <>{[0, 0.12, 0.24, 0.36].map((delay, index) => <SkeletonCard key={index} delay={delay} />)}</>
           )}
-          {convsError && !convsLoading && <SidebarEmpty kind="error" onAction={refetchConvs} />}
-          {!convsLoading && !convsError && convs.length === 0 && (
-            searchQuery ? <SidebarEmpty kind="no-results" /> : <SidebarEmpty kind="no-convs" onAction={onNewChat} />
+
+          {convsError && !convsLoading && <SidebarEmpty kind="error" onAction={() => void refetchConvs()} />}
+
+          {!convsLoading && !convsError && filteredConvs.length === 0 && (
+            searchQuery
+              ? <SidebarEmpty kind="no-results" />
+              : <SidebarEmpty kind="no-convs" onAction={onNewChat} />
           )}
 
           {!convsError && pinnedConvs.length > 0 && (
@@ -503,15 +547,17 @@ export default function Sidebar({ onNewChat, onNewGroup, onProfile, onSettings, 
               {renderConvRows(pinnedConvs, 0)}
             </>
           )}
+
           {!convsError && recentConvs.length > 0 && (
             <>
-              {pinnedConvs.length > 0 && <div className={styles.sectionLabel}><span className={styles.sectionLabelDot} />Recent</div>}
+              {pinnedConvs.length > 0 && (
+                <div className={styles.sectionLabel}><span className={styles.sectionLabelDot} />Recent</div>
+              )}
               {renderConvRows(recentConvs, pinnedConvs.length)}
             </>
           )}
         </div>
 
-        {/* ── FOOTER ── */}
         <div className={styles.footer}>
           <div className={styles.footerBrand}>
             <span className={styles.footerBrandIcon}><CloudLightning /></span>
@@ -526,14 +572,32 @@ export default function Sidebar({ onNewChat, onNewGroup, onProfile, onSettings, 
           </div>
         </div>
 
-        {/* ── MOBILE BOTTOM NAV ── */}
-        <BottomNav tab={tab} onTab={setTab} unread={totalUnread} onNewChat={onNewChat} onSettings={onSettings} />
+        {isMobile && (
+          <BottomNav
+            tab={tab}
+            onTab={setTab}
+            unread={totalUnread}
+            onNewChat={onNewChat}
+            onSettings={onSettings}
+          />
+        )}
 
-        {/* ── CONTEXT MENU ── */}
         {convCtx && (
           <ConvContextMenu
-            cid={convCtx.cid} x={convCtx.x} y={convCtx.y}
-            conv={conversations[convCtx.cid] as Conversation | undefined}
+            cid={convCtx.cid}
+            x={convCtx.x}
+            y={convCtx.y}
+            conv={
+              conversations[convCtx.cid]
+                ? (toRowProps(
+                  buildSidebarConversationView(
+                    me?.id ?? null,
+                    convCtx.cid,
+                    conversations[convCtx.cid],
+                  ),
+                ) as never)
+                : undefined
+            }
             onClose={closeConvCtx}
             onAction={handleConvAction}
           />

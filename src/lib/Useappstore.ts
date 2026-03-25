@@ -1,5 +1,16 @@
-import { Chat, UIState } from '@/src/types'
 import { create } from 'zustand'
+
+interface UIState {
+    sidebarOpen: boolean
+    selectedChatId: string | null
+    showGestureHint: boolean
+    loading: boolean
+    error: string | null
+}
+
+interface Chat {
+    id: string
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ZUSTAND STORE

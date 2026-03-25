@@ -1,8 +1,6 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { getDatabase, ref, onValue, off } from 'firebase/database'
-import { getApp } from 'firebase/app'
 import {
   useCallData,
   useCallStatus,
@@ -17,12 +15,10 @@ import {
   useLocalVideoRef,
   useRemoteVideoRef,
 } from '@/src/hooks/useCallingStore'
-import { useStore } from '@/src/lib/store'
+import { useStore } from '@/src/store/store'
 import { useRingtone } from '@/src/hooks/useRingtone'
 import { CallAvatar, CallTimer, CtrlBtn, QualityBars } from '../CallTimer'
 import { FlipVertical, Mic, MicOff, PhoneIcon, PhoneOff, PhoneOffIcon, Video, VideoIcon, VideoOff, Volume, VolumeOff, VolumeOffIcon } from 'lucide-react'
-
-/* ── Tiny helpers (unchanged from your original) ── */
 
 function getStatusLabel(status: string, isIncoming: boolean) {
   if (status === 'ringing') return isIncoming ? 'Incoming…' : 'Ringing…'
@@ -33,11 +29,7 @@ function getStatusLabel(status: string, isIncoming: boolean) {
   return '…'
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   COMPONENT
-═══════════════════════════════════════════════════════════════ */
 export default function FloatingCallWindow() {
-  /* ── Store state (fine-grained — no unnecessary re-renders) ── */
   const callData = useCallData()
   const callStatus = useCallStatus()
   const quality = useCallQuality()
@@ -48,11 +40,9 @@ export default function FloatingCallWindow() {
   const camOff = useCamOff()
   const speakerOff = useSpeakerOff()
 
-  /* ── Video ref callbacks — passed directly to <video ref={...}> ── */
   const setLocalVideoEl = useLocalVideoRef()
   const setRemoteVideoEl = useRemoteVideoRef()
 
-  /* ── Actions from store ── */
   const {
     startCaller, acceptCall, rejectCall, endCall,
     toggleMute, toggleCam, toggleSpeaker, minimize,
@@ -61,7 +51,6 @@ export default function FloatingCallWindow() {
   const { showToast, me } = useStore()
   const { startRingtone, startRingback, stop: stopRingtone } = useRingtone()
 
-  /* ── Stable refs for UIDs ── */
   const callerUidRef = useRef(callData?.callerUid ?? '')
   const calleeUidRef = useRef(callData?.calleeUid ?? '')
   useEffect(() => {
@@ -73,15 +62,15 @@ export default function FloatingCallWindow() {
   const isIncoming = callData?.isIncoming ?? false
   const cid = callData?.cid ?? ''
 
-  /* ── OUTGOING: start ringback + WebRTC ── */
   useEffect(() => {
     if (!overlayOpen || !callData || isIncoming || !cid) return
     startRingback()
     startCaller(
-      cid, isVideo,
-      callerUidRef.current || me?.uid || '',
+      cid,
+      isVideo,
+      callerUidRef.current || me?.id || '',
       calleeUidRef.current,
-    ).catch(err => {
+    ).catch((err) => {
       console.error('[Call] startCaller failed:', err)
       stopRingtone()
       showToast('Could not access microphone / camera')
@@ -91,39 +80,16 @@ export default function FloatingCallWindow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overlayOpen, cid])
 
-  /* ── INCOMING: play ringtone until accepted/rejected ── */
   useEffect(() => {
     if (!overlayOpen || !isIncoming || connected) return
     startRingtone()
     return () => stopRingtone()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overlayOpen, isIncoming, connected])
+  }, [overlayOpen, isIncoming, connected, startRingtone, stopRingtone])
 
-  /* ── Stop ringback when call connects ── */
   useEffect(() => {
-    if (connected) stopRingtone()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected])
+    if (connected || callStatus === 'ended') stopRingtone()
+  }, [callStatus, connected, stopRingtone])
 
-  /* ── Remote hangup listener ── */
-  useEffect(() => {
-    if (!overlayOpen || !cid) return
-    const db = getDatabase(getApp())
-    const statusRef = ref(db, `calls/${cid}/status`)
-    let initialLoadDone = false
-    const unsub = onValue(statusRef, snap => {
-      if (!initialLoadDone) { initialLoadDone = true; return }
-      if (snap.val() === 'ended') {
-        stopRingtone()
-        showToast('Call ended.')
-        endCall()
-      }
-    })
-    return () => off(statusRef, 'value', unsub as any)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overlayOpen, cid])
-
-  /* ── Accept ── */
   const handleAccept = useCallback(async () => {
     stopRingtone()
     try {
@@ -134,30 +100,23 @@ export default function FloatingCallWindow() {
     }
   }, [acceptCall, rejectCall, stopRingtone, showToast])
 
-  /* ── Reject ── */
   const handleReject = useCallback(async () => {
     stopRingtone()
     await rejectCall()
   }, [rejectCall, stopRingtone])
 
-  /* ── End ── */
   const handleEnd = useCallback(async () => {
     stopRingtone()
     await endCall()
   }, [endCall, stopRingtone])
 
-  /* ── Guard ── */
   if (!overlayOpen || !callData || minimized) return null
 
-  /* ── Derived ── */
   const displayName = isIncoming ? (callData.callerName ?? 'Unknown') : callData.peerName
   const displayPhoto = isIncoming ? (callData.callerPhoto ?? undefined) : callData.peerPhoto
   const videoActive = connected && isVideo
   const isRinging = !connected && (callStatus === 'ringing' || callStatus === 'idle')
 
-  /* ═══════════════════════════════════════════════════════════
-     RENDER
-  ═══════════════════════════════════════════════════════════ */
   return (
     <>
       <style>{`
@@ -166,27 +125,24 @@ export default function FloatingCallWindow() {
         @keyframes callSlide { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
-      {/* BACKDROP */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 700,
         background: 'linear-gradient(160deg,#05071a 0%,#0b0d20 50%,#07091a 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         overflow: 'hidden', animation: 'callIn .3s ease',
       }}>
-
-        {/* Ambient blobs */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', top: '-15%', left: '-15%', background: 'radial-gradient(circle,var(--ac-dim) 0%,transparent 65%)', filter: 'blur(50px)' }} />
           <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', bottom: '-10%', right: '-10%', background: 'radial-gradient(circle,rgba(124,110,255,.06) 0%,transparent 65%)', filter: 'blur(50px)' }} />
         </div>
 
-        {/* ── REMOTE VIDEO (full screen background) ── */}
         <video
-          ref={setRemoteVideoEl}       /* ← store ref callback */
-          autoPlay playsInline
+          ref={setRemoteVideoEl}
+          autoPlay
+          playsInline
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'contain',        /* ← contain fixes mobile zoom issue */
+            objectFit: 'contain',
             background: '#000',
             opacity: .9,
             display: videoActive ? 'block' : 'none',
@@ -194,10 +150,6 @@ export default function FloatingCallWindow() {
           }}
         />
 
-        {/* ── LOCAL VIDEO PiP
-            Show when isVideo AND (ringing OR connecting OR connected) AND cam on.
-            FIX: was only showing when videoActive (=connected). Now shows from
-            the moment the call starts so caller sees their own preview. ── */}
         {isVideo && !camOff && (callStatus === 'ringing' || callStatus === 'connecting' || videoActive) && (
           <div style={{
             position: 'absolute', bottom: 110, right: 16, zIndex: 20,
@@ -206,14 +158,15 @@ export default function FloatingCallWindow() {
             boxShadow: '0 4px 24px rgba(0,0,0,.6)',
           }}>
             <video
-              ref={setLocalVideoEl}    /* ← store ref callback */
-              autoPlay muted playsInline
+              ref={setLocalVideoEl}
+              autoPlay
+              muted
+              playsInline
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
           </div>
         )}
 
-        {/* ── INCOMING CALL SCREEN ── */}
         {isIncoming && !connected && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 15,
@@ -248,7 +201,6 @@ export default function FloatingCallWindow() {
           </div>
         )}
 
-        {/* ── CALL INFO HEADER (outgoing + after accept) ── */}
         {(!isIncoming || connected) && (
           <div style={{
             position: 'relative', zIndex: 10,
@@ -270,8 +222,8 @@ export default function FloatingCallWindow() {
                 {connected
                   ? <CallTimer running={connected} />
                   : <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'rgba(255,255,255,.5)' }}>
-                    {getStatusLabel(callStatus, isIncoming)}
-                  </span>
+                      {getStatusLabel(callStatus, isIncoming)}
+                    </span>
                 }
                 {connected && (
                   <><span style={{ color: 'rgba(255,255,255,.2)', fontSize: 10 }}>·</span><QualityBars level={quality} /></>
@@ -281,7 +233,6 @@ export default function FloatingCallWindow() {
           </div>
         )}
 
-        {/* ── CONTROLS BAR ── */}
         {(!isIncoming || connected) && (
           <div style={{
             position: 'relative', zIndex: 20,
@@ -293,7 +244,6 @@ export default function FloatingCallWindow() {
               ? 'linear-gradient(to top,rgba(5,7,26,.9) 0%,rgba(5,7,26,.55) 60%,transparent 100%)'
               : 'transparent',
           }}>
-
             {connected && (
               <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                 <CtrlBtn onClick={toggleSpeaker} active={speakerOff} size={44} label={speakerOff ? 'Speaker off' : 'Speaker'}>
@@ -313,48 +263,28 @@ export default function FloatingCallWindow() {
             )}
 
             <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-              <CtrlBtn
-                onClick={toggleMute}
-                active={muted}
-                size={54}
-                label={muted ? 'Unmute' : 'Mute'}
-              >
+              <CtrlBtn onClick={toggleMute} active={muted} size={54} label={muted ? 'Unmute' : 'Mute'}>
                 {muted ? <MicOff size={20} /> : <Mic size={20} />}
               </CtrlBtn>
 
-              <CtrlBtn
-                onClick={handleEnd}
-                danger
-                size={68}
-                label="End"
-              >
+              <CtrlBtn onClick={handleEnd} danger size={68} label="End">
                 <PhoneOff size={24} />
               </CtrlBtn>
 
               {isVideo ? (
-                <CtrlBtn
-                  onClick={toggleCam}
-                  active={camOff}
-                  size={54}
-                  label={camOff ? 'Show cam' : 'Hide cam'}
-                >
+                <CtrlBtn onClick={toggleCam} active={camOff} size={54} label={camOff ? 'Show cam' : 'Hide cam'}>
                   {camOff ? <VideoOff size={20} /> : <Video size={20} />}
                 </CtrlBtn>
               ) : (
-                <CtrlBtn
-                  onClick={toggleSpeaker}
-                  active={speakerOff}
-                  size={54}
-                  label="Speaker"
-                >
+                <CtrlBtn onClick={toggleSpeaker} active={speakerOff} size={54} label="Speaker">
                   {speakerOff ? <VolumeOff size={20} /> : <Volume size={20} />}
                 </CtrlBtn>
               )}
             </div>
           </div>
         )}
-
       </div>
     </>
   )
 }
+

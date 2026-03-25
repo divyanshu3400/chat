@@ -2,14 +2,14 @@
    ROOT
 ═══════════════════════════════════════════════════ */
 .root {
-  --bg: #1a1a2e;
-  --surface: #16213e;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --accent: #3b82f6;
-  --danger: #ef4444;
-  --success: #10b981;
+  --bg: var(--bg2);
+  --surface: var(--bg3);
+  --border: var(--border);
+  --text: var(--tx);
+  --muted: var(--tx3);
+  --accent: var(--accent);
+  --danger: var(--red);
+  --success: var(--green);
   --btn: 36px;
 
   position: relative;
@@ -59,7 +59,7 @@
 .editKbd {
   display: inline-block;
   padding: 1px 5px;
-  background: rgba(255, 255, 255, .1);
+  background: var(--glass2);
   border-radius: 4px;
   font-family: monospace;
   font-size: 11px;
@@ -78,7 +78,7 @@
 }
 
 .editCancel:hover {
-  background: rgba(255, 255, 255, .08);
+  background: var(--glass);
 }
 
 /* ─── reply preview ─── */
@@ -114,7 +114,7 @@
 
 .replyText {
   font-size: 12px;
-  color: #fff;
+  color: var(--badge-tx);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -158,7 +158,7 @@
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, .06);
+  background: color-mix(in srgb, var(--glass) 82%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,7 +198,7 @@
 }
 
 .attRemove:hover {
-  background: rgba(255, 255, 255, .08);
+  background: var(--glass);
   color: var(--danger);
 }
 
@@ -227,7 +227,7 @@
 }
 
 .emojiCell:hover {
-  background: rgba(255, 255, 255, .08);
+  background: var(--glass);
   transform: scale(1.2);
 }
 
@@ -257,7 +257,7 @@
 }
 
 .iBtn:hover {
-  background: rgba(255, 255, 255, .07);
+  background: color-mix(in srgb, var(--glass2) 72%, transparent);
   color: var(--text);
 }
 
@@ -343,14 +343,14 @@
   border: none;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--badge-tx);
   cursor: pointer;
   transition: background .15s, transform .1s, opacity .15s;
   -webkit-tap-highlight-color: transparent;
 }
 
 .sendBtn:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent);
 }
 
 .sendBtn:active:not(:disabled) {
@@ -362,7 +362,7 @@
 }
 
 .sendEdit:hover:not(:disabled) {
-  background: #059669 !important;
+  background: var(--success) !important;
 }
 
 .sendDisabled {
@@ -396,7 +396,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, .06);
+  background: color-mix(in srgb, var(--glass) 82%, transparent);
   border: none;
   color: var(--danger);
   cursor: pointer;
@@ -476,7 +476,7 @@
   border-radius: 17px;
   background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--badge-tx);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -485,7 +485,7 @@
 }
 
 .voiceSend:hover {
-  background: #2563eb;
+  background: var(--accent);
 }
 
 .voiceSend:active {
@@ -497,34 +497,38 @@
 ══════════════════════════════════════════════════ */
 @media (max-width: 639px) {
   .root {
-    padding: 4px 6px max(4px, env(safe-area-inset-bottom));
+    --bg: var(--bg2);
+    --surface: var(--bg3);
+    --border: var(--border);
+    --text: var(--tx);
+    --muted: var(--tx3);
+    --accent: var(--accent);
+    --danger: var(--red);
+    --success: var(--green);
+    --btn: 36px;
+
+    position: relative;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
   }
 
-  .iBtn {
-    width: 32px;
-    height: 32px;
-  }
+  @media (min-width: 640px) {
+    .root {
+      --bg: var(--bg2);
+      --surface: var(--bg3);
+      --border: var(--border);
+      --text: var(--tx);
+      --muted: var(--tx3);
+      --accent: var(--accent);
+      --danger: var(--red);
+      --success: var(--green);
+      --btn: 36px;
 
-  .sendBtn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .inputRow {
-    gap: 2px;
-  }
-
-  .emojiPanel {
-    grid-template-columns: repeat(8, 1fr);
-  }
-}
-
-@media (min-width: 640px) {
-  .root {
-    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
-  }
-
-  .inputRow {
-    gap: 5px;
+      position: relative;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    }
   }
 }

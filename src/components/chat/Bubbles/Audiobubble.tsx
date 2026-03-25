@@ -12,7 +12,7 @@ import { AudioPlayer } from './AudioPlayer'
 
 interface Props {
   url: string
-  duration?: number
+  duration?: number | string
   mine: boolean
 }
 

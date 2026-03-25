@@ -1,40 +1,6 @@
-/**
- * lib/store/ui.ts
- *
- * Architecture:
- *  1. createBooleanSlice  — generic reusable factory for any boolean flag map
- *  2. createStateSlice    — generic reusable factory for any typed value
- *  3. useCipherUIStore    — composed UI store for CipherApp
- *
- * Extending: import the factories and compose your own slice in any other
- * store file — no copy-paste needed.
- */
-
-import { CallData } from '@/src/types'
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 
-/* ═══════════════════════════════════════════════════════════════════════
-   GENERIC FACTORIES
-   These are the reusable building blocks. They return a slice initialiser
-   compatible with Zustand's `set` / `get` signature so you can spread
-   them into any store.
-═══════════════════════════════════════════════════════════════════════ */
-
-/**
- * createBooleanSlice
- * ------------------
- * Manages a fixed set of named boolean flags.
- *
- * Usage:
- *   const panelSlice = createBooleanSlice({ settings: false, profile: false })
- *   // gives: panels.settings, panels.profile
- *   //        setPanel('settings', true)
- *   //        togglePanel('settings')
- *   //        resetPanels()
- *
- * @param defaults  Record of flag name → initial boolean value
- */
 export function createBooleanSlice<K extends string>(defaults: Record<K, boolean>) {
     type State = {
         flags: Record<K, boolean>
@@ -69,16 +35,6 @@ export function createBooleanSlice<K extends string>(defaults: Record<K, boolean
 
     return slice
 }
-
-/**
- * createStateSlice
- * ----------------
- * Manages a single typed value with set / reset helpers.
- *
- * Usage:
- *   const screenSlice = createStateSlice<Screen>('auth')
- *   // gives: value, setValue(x), resetValue()
- */
 export function createStateSlice<T>(initial: T) {
     type State = {
         value: T
@@ -95,11 +51,8 @@ export function createStateSlice<T>(initial: T) {
     return slice
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   DOMAIN TYPES  (keep co-located so the store is self-contained)
-═══════════════════════════════════════════════════════════════════════ */
 
-export type Screen = 'setup' | 'auth' | 'app'
+export type Screen = 'setup' | 'auth' | 'app' | 'mfa' |'forgot-success' | 'landing' | 'forgot'
 
 export type PanelKey = 'settings' | 'profile' | 'newChat' | 'newGroup' | 'bookmarks'
 
@@ -109,11 +62,6 @@ export interface ConvCtx {
     x: number
     y: number
 }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   CIPHER UI STORE
-   Composed from generic slices + CipherApp-specific state.
-═══════════════════════════════════════════════════════════════════════ */
 
 interface CipherUIState {
     /* ── Screen router ─────────────────────────────────────────────── */
@@ -140,11 +88,6 @@ interface CipherUIState {
     closePanel: (key: PanelKey) => void
     togglePanel: (key: PanelKey) => void
     closeAllPanels: () => void
-
-    /* ── Call overlay ──────────────────────────────────────────────── */
-    callData: CallData | null
-    setCallData: (data: CallData | null) => void
-    endCall: () => void
 
     /* ── Sidebar conversation context menu ────────────────────────── */
     convCtx: ConvCtx | null
@@ -197,11 +140,6 @@ export const useCipherUIStore = create<CipherUIState>()(
             closeAllPanels: () =>
                 set({ panels: { ...PANEL_DEFAULTS } }, false, 'closeAllPanels'),
 
-            /* ── Call ───────────────────────────────────────────────────── */
-            callData: null,
-            setCallData: (data) => set({ callData: data }, false, 'setCallData'),
-            endCall: () => set({ callData: null }, false, 'endCall'),
-
             /* ── Conv context menu ──────────────────────────────────────── */
             convCtx: null,
             openConvCtx: (ctx) => set({ convCtx: ctx }, false, 'openConvCtx'),
@@ -240,12 +178,6 @@ export const usePanels = () => useCipherUIStore(s => ({
     closeAllPanels: s.closeAllPanels,
 }))
 
-/** Call overlay */
-export const useCallUI = () => useCipherUIStore(s => ({
-    callData: s.callData,
-    setCallData: s.setCallData,
-    endCall: s.endCall,
-}))
 
 /** Boot flag */
 export const useSetupDone = () => useCipherUIStore(s => ({

@@ -1,17 +1,6 @@
 import { memo } from "react";
-import {
-    type UploadTask,
-} from 'firebase/storage'
 import { Camera } from "lucide-react";
-
-export interface UploadEntry {
-    id: string
-    file: File
-    task: UploadTask
-    progress: number          // 0-100
-    status: 'uploading' | 'done' | 'failed'
-    preview?: string
-}
+import type { UploadEntry } from "@/src/store/store";
 
 /* ── UPLOAD PROGRESS BUBBLE ── */
 export const UploadBubble = memo(({ entry, onCancel }: { entry: UploadEntry; onCancel: () => void }) => (

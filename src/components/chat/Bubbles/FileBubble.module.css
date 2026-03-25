@@ -60,7 +60,7 @@
     border-color: color-mix(in srgb, var(--ac, #8b5cf6) 30%, transparent);
     border-radius: 18px 4px 18px 18px;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        inset 0 1px 0 var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
 .theirs {
@@ -158,8 +158,8 @@
 }
 
 .metaChip {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--glass, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
     border-radius: 5px;
     padding: 1px 6px;
     font-size: 9.5px;
@@ -174,7 +174,7 @@
 .progressTrack {
     height: 4px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass, rgba(255, 255, 255, 0.08));
     overflow: hidden;
     margin-bottom: 6px;
     position: relative;
@@ -219,13 +219,13 @@
 }
 
 .dlBtnMine {
-    background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--glass, rgba(255, 255, 255, 0.12));
+    color: var(--tx, rgba(255, 255, 255, 0.9));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
 }
 
 .dlBtnMine:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--glass-hover, rgba(255, 255, 255, 0.2));
     transform: translateY(-1px);
 }
 
@@ -265,7 +265,7 @@
 .spinner {
     width: 10px;
     height: 10px;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
     border-top-color: var(--ac, #8b5cf6);
     border-radius: 50%;
     display: inline-block;

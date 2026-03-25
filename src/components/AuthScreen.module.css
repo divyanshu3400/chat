@@ -1,0 +1,972 @@
+/* components/AuthScreen/AuthScreen.module.css */
+
+/* ── Fonts ───────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── Keyframes ───────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(1.5deg); }
+  66% { transform: translateY(5px) rotate(-1deg); }
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  0% { opacity: 0; transform: translateX(-30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cardIn {
+  0% { opacity: 0; transform: translateY(28px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes scan {
+  0%, 100% { transform: scaleX(0); transform-origin: left; }
+  45% { transform: scaleX(1); transform-origin: left; }
+  55% { transform: scaleX(1); transform-origin: right; }
+  99% { transform: scaleX(0); transform-origin: right; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes badgeGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(16, 185, 129, 0.15); }
+  50% { box-shadow: 0 0 28px rgba(16, 185, 129, 0.4); }
+}
+
+@keyframes mfaSlideIn {
+  0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes decorPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Root ────────────────────────────────────────────────────── */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--color-bg-dark);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Geist', system-ui, sans-serif;
+}
+
+/* ── Branding Side (Desktop) ─────────────────────────────────── */
+.brandingSide {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-bg-dark) 0%, rgba(6, 182, 212, 0.05) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 60px 48px;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .brandingSide {
+    display: none;
+  }
+}
+
+.brandingVignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, transparent 20%, var(--color-bg-dark) 80%),
+    radial-gradient(ellipse 600px 600px at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 100% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 70%);
+}
+
+.brandingDecoration {
+  position: absolute;
+  bottom: -50px;
+  right: -100px;
+  width: 500px;
+  height: 500px;
+  pointer-events: none;
+  opacity: 0.6;
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.decorSvg {
+  width: 100%;
+  height: 100%;
+  filter: blur(1px);
+}
+
+.brandingContent {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.brandingLogoWrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  animation: float 7s ease-in-out infinite;
+}
+
+.brandingText {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brandingTitle {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin: 0;
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 40%, #10b981 70%, #818cf8 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: fadeUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.brandingSubtitle {
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0;
+  animation: fadeUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.1s;
+}
+
+.brandingDescription {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin: 0;
+  animation: fadeUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.15s;
+}
+
+.brandingFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.featureItem {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  animation: fadeInLeft 0.6s ease both;
+}
+
+.featureItem:nth-child(1) { animation-delay: 0.25s; }
+.featureItem:nth-child(2) { animation-delay: 0.35s; }
+.featureItem:nth-child(3) { animation-delay: 0.45s; }
+
+.featureIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a5b4fc;
+  flex-shrink: 0;
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.featureName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 2px;
+}
+
+.featureDesc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.brandingFooter {
+  margin-top: 20px;
+  animation: fadeUp 0.8s ease both;
+  animation-delay: 0.6s;
+}
+
+.brandingFooterText {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Form Side ───────────────────────────────────────────────── */
+.formSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+  background: var(--color-bg-dark);
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .formSide {
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, rgba(99, 102, 241, 0.02) 100%);
+  }
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobileLogoWrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 20px;
+  animation: float 7s ease-in-out infinite;
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobileLogoWrap {
+    display: block;
+  }
+}
+
+.pulseRing {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  animation: pulseRing 2.4s ease-out infinite;
+}
+
+.mobileTagline {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 1023px) {
+  .mobileTagline {
+    display: flex;
+  }
+}
+
+.mobileWordmark {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 40%, #10b981 70%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mobileSubtext {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ── Glass card ──────────────────────────────────────────────── */
+.card {
+  width: 100%;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  backdrop-filter: blur(32px);
+  animation: cardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.2s;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 40px 80px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(99, 102, 241, 0.05);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 28px 20px;
+  }
+}
+
+/* ── Tab switcher ────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+.tab {
+  flex: 1;
+  padding: 9px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: 'Geist', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.tabActive {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  color: #a5b4fc !important;
+}
+
+/* ── Card header ─────────────────────────────────────────────── */
+.cardHeader {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+
+.cardSubtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Form fields ─────────────────────────────────────────────── */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fieldWrap {
+  position: relative;
+}
+
+.field {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-primary);
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.field::placeholder {
+  color: rgba(148, 163, 184, 0.35);
+}
+
+.field:hover {
+  border-color: var(--color-border);
+  background: var(--color-border-light);
+}
+
+.field:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.04);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+.fieldError {
+  border-color: rgba(244, 63, 94, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08) !important;
+}
+
+.fieldIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: rgba(148, 163, 184, 0.4);
+  pointer-events: none;
+}
+
+.fieldSuffix {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(148, 163, 184, 0.4);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.fieldSuffix:hover {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+/* ── Error message ───────────────────────────────────────────── */
+.errorBox {
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #fb7185;
+  margin-bottom: 14px;
+  animation: fadeUp 0.2s ease;
+}
+
+/* ── Forgot password link ────────────────────────────────────── */
+.forgotWrap {
+  text-align: right;
+  margin-bottom: 16px;
+}
+
+.forgotLink {
+  font-size: 12px;
+  color: rgba(99, 102, 241, 0.7);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Geist', sans-serif;
+  transition: color 0.15s;
+  padding: 0;
+}
+
+.forgotLink:hover {
+  color: rgba(99, 102, 241, 1);
+}
+
+/* ── Primary button ──────────────────────────────────────────── */
+.btnPrimary {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(6, 182, 212, 0.7));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #fff;
+  font-family: 'Geist', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.2px;
+}
+
+.btnPrimary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(6, 182, 212, 0.85));
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Google button ───────────────────────────────────────────── */
+.btnGoogle {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btnGoogle:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: var(--color-border-light);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.15);
+}
+
+.btnGoogle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.dividerText {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Security warning banner ─────────────────────────────────── */
+.securityBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  border-radius: 10px;
+  margin-bottom: 18px;
+  animation: fadeUp 0.3s ease;
+}
+
+.securityBannerIcon {
+  width: 16px;
+  height: 16px;
+  color: rgba(245, 158, 11, 0.8);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.securityBannerText {
+  font-size: 12px;
+  color: rgba(245, 158, 11, 0.75);
+  line-height: 1.6;
+}
+
+.securityBannerAction {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(245, 158, 11, 0.9);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: 'Geist', sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── MFA panel ───────────────────────────────────────────────── */
+.mfaPanel {
+  animation: mfaSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.mfaTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.mfaSubtitle {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.55);
+  text-align: center;
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.mfaOptions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mfaOption {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Geist', sans-serif;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mfaOption:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.05);
+  color: #a5b4fc;
+}
+
+.mfaOptionActive {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: #a5b4fc !important;
+}
+
+.mfaOptionIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a5b4fc;
+}
+
+/* ── OTP ─────────────────────────────────────────────────────── */
+.otpRow {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.otpBox {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  background: var(--color-glass);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'Geist Mono', monospace;
+  outline: none;
+  transition: all 0.15s ease;
+  caret-color: #6366f1;
+}
+
+.otpBox:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(99, 102, 241, 0.05);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.otpResend {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.4);
+  margin-bottom: 16px;
+  font-family: 'Geist Mono', monospace;
+}
+
+.otpResendBtn {
+  background: none;
+  border: none;
+  color: rgba(99, 102, 241, 0.7);
+  cursor: pointer;
+  font-family: 'Geist Mono', monospace;
+  font-size: 12px;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.otpResendBtn:hover {
+  color: #a5b4fc;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: rgba(148, 163, 184, 0.5);
+  cursor: pointer;
+  font-family: 'Geist', sans-serif;
+  font-size: 12px;
+  padding: 0;
+  margin-bottom: 16px;
+  transition: color 0.15s;
+}
+
+.backBtn:hover {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+/* ── E2E badge ───────────────────────────────────────────────── */
+.e2eBadge {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.12);
+  border-radius: 10px;
+  font-size: 11.5px;
+  color: rgba(16, 185, 129, 0.8);
+  animation: badgeGlow 4s ease-in-out infinite;
+  font-family: 'Geist Mono', monospace;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Password strength bar ───────────────────────────────────── */
+.strengthWrap {
+  margin-top: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.strengthBar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border-light);
+  transition: background 0.3s ease;
+}
+
+.strengthWeak {
+  background: rgba(244, 63, 94, 0.7);
+}
+
+.strengthFair {
+  background: rgba(245, 158, 11, 0.7);
+}
+
+.strengthGood {
+  background: rgba(16, 185, 129, 0.7);
+}
+
+.strengthStrong {
+  background: rgba(99, 102, 241, 0.8);
+}
+
+/* ── Success state ───────────────────────────────────────────── */
+.successBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0 8px;
+  animation: fadeUp 0.3s ease;
+  text-align: center;
+}
+
+.successIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(16, 185, 129, 0.9);
+}
+
+.successTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.successSub {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.55);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Responsive Design ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .root {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .formSide {
+    padding: 24px 16px;
+  }
+
+  .mobileLogoWrap {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+
+  .mobileWordmark {
+    font-size: 24px;
+  }
+
+  .card {
+    border-radius: 16px;
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .root {
+    padding: 0;
+  }
+
+  .formSide {
+    padding: 16px 12px;
+  }
+
+  .formContainer {
+    max-width: 100%;
+  }
+
+  .card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .cardSubtitle {
+    font-size: 12px;
+  }
+
+  .mobileWordmark {
+    font-size: 22px;
+  }
+
+  .mobileSubtext {
+    font-size: 9px;
+  }
+}
+
+/* ── Scrollbar Styling ───────────────────────────────────────── */
+.formSide::-webkit-scrollbar {
+  width: 6px;
+}
+
+.formSide::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.formSide::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+
+.formSide::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}

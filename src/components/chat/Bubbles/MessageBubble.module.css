@@ -23,38 +23,38 @@
     --mb-theirs-bg-active: var(--bubble-theirs-bg-active, #252d42);
     --mb-theirs-tx: var(--bubble-theirs-tx, #e2e6f0);
     --mb-theirs-tx2: rgba(226, 230, 240, 0.55);
-    --mb-theirs-border: rgba(255, 255, 255, 0.06);
+    --mb-theirs-border: var(--border-subtle, rgba(255, 255, 255, 0.06));
 
     /* ── Reply quote ── */
-    --mb-rq-mine-bg: rgba(255, 255, 255, 0.14);
-    --mb-rq-mine-bar: rgba(255, 255, 255, 0.75);
-    --mb-rq-mine-sender: rgba(255, 255, 255, 0.92);
-    --mb-rq-theirs-bg: rgba(79, 126, 248, 0.12);
+    --mb-rq-mine-bg: var(--reply-mine-bg, rgba(255, 255, 255, 0.14));
+    --mb-rq-mine-bar: var(--reply-mine-border, rgba(255, 255, 255, 0.75));
+    --mb-rq-mine-sender: var(--reply-mine-tx, rgba(255, 255, 255, 0.92));
+    --mb-rq-theirs-bg: var(--ac-dim, rgba(79, 126, 248, 0.12));
     --mb-rq-theirs-bar: var(--ac, #4f7ef8);
     --mb-rq-theirs-sender: var(--ac, #4f7ef8);
 
     /* ── Ticks ── */
-    --mb-tick-sent: rgba(255, 255, 255, 0.45);
-    --mb-tick-delivered: rgba(255, 255, 255, 0.82);
-    --mb-tick-read: #7dd3fc;
+    --mb-tick-sent: var(--tick-sent, rgba(255, 255, 255, 0.45));
+    --mb-tick-delivered: var(--tick-delivered, rgba(255, 255, 255, 0.82));
+    --mb-tick-read: var(--tick-read, #7dd3fc);
 
     /* ── Media ── */
-    --mb-media-badge-bg: rgba(0, 0, 0, 0.52);
-    --mb-media-overlay: rgba(0, 0, 0, 0.36);
-    --mb-play-bg: rgba(255, 255, 255, 0.93);
-    --mb-play-tx: #0f172a;
+    --mb-media-badge-bg: var(--media-badge-bg, rgba(0, 0, 0, 0.52));
+    --mb-media-overlay: var(--media-overlay, rgba(0, 0, 0, 0.36));
+    --mb-play-bg: var(--play-btn-bg, rgba(255, 255, 255, 0.93));
+    --mb-play-tx: var(--play-btn-tx, #0f172a);
 
     /* ── File ── */
-    --mb-file-icon-mine: rgba(255, 255, 255, 0.16);
-    --mb-file-icon-theirs: rgba(79, 126, 248, 0.15);
+    --mb-file-icon-mine: var(--file-icon-mine, rgba(255, 255, 255, 0.16));
+    --mb-file-icon-theirs: var(--ac-dim, rgba(79, 126, 248, 0.15));
     --mb-file-icon-tx-theirs: var(--ac, #4f7ef8);
-    --mb-dl-mine-bg: rgba(255, 255, 255, 0.16);
-    --mb-dl-mine-bg-hover: rgba(255, 255, 255, 0.26);
-    --mb-dl-theirs-bg: rgba(79, 126, 248, 0.13);
-    --mb-dl-theirs-bg-hover: rgba(79, 126, 248, 0.24);
+    --mb-dl-mine-bg: var(--dl-btn-mine-bg, rgba(255, 255, 255, 0.16));
+    --mb-dl-mine-bg-hover: var(--progress-mine, rgba(255, 255, 255, 0.26));
+    --mb-dl-theirs-bg: var(--ac-dim, rgba(79, 126, 248, 0.13));
+    --mb-dl-theirs-bg-hover: var(--ac-glow, rgba(79, 126, 248, 0.24));
 
     /* ── Read more ── */
-    --mb-readmore-mine: rgba(255, 255, 255, 0.68);
+    --mb-readmore-mine: var(--reply-mine-tx, rgba(255, 255, 255, 0.68));
     --mb-readmore-theirs: var(--ac, #4f7ef8);
     --mb-collapse-lines: 5;
     /* lines shown when collapsed */
@@ -63,8 +63,8 @@
     --mb-picker-bg: var(--s2, #141b2d);
 
     /* ── System pill ── */
-    --mb-sys-bg: rgba(255, 255, 255, 0.06);
-    --mb-sys-tx: rgba(255, 255, 255, 0.4);
+    --mb-sys-bg: var(--glass, rgba(255, 255, 255, 0.06));
+    --mb-sys-tx: var(--tx-muted, rgba(255, 255, 255, 0.4));
 
     /* ── Geometry ── */
     --mb-r: 20px;
@@ -159,7 +159,7 @@
     letter-spacing: 0.025em;
     color: var(--mb-sys-tx);
     background: var(--mb-sys-bg);
-    border: 1px solid var(--bd, rgba(255, 255, 255, .08));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, .08));
     border-radius: 20px;
     padding: 3px 13px;
 }
@@ -301,7 +301,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 220px;
-    color: var(--tx2, rgba(255, 255, 255, .6));
+    color: var(--mb-theirs-tx2, rgba(255, 255, 255, .6));
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -362,6 +362,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--mb-collapse-lines);
+    line-clamp: var(--mb-collapse-lines);
     overflow: hidden;
 }
 
@@ -445,7 +446,7 @@
 .textContent blockquote {
     margin: 4px 0;
     padding-left: 10px;
-    border-left: 2px solid rgba(255, 255, 255, 0.3);
+    border-left: 2px solid var(--mb-theirs-border, rgba(255, 255, 255, 0.3));
     opacity: 0.8;
 }
 
@@ -709,7 +710,7 @@
 .progressTrack {
     height: 3px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--mb-theirs-border, rgba(255, 255, 255, 0.18));
     margin-top: 5px;
     overflow: hidden;
     position: relative;
@@ -782,7 +783,7 @@
     position: absolute;
     bottom: calc(100% + 7px);
     background: var(--mb-picker-bg);
-    border: 1px solid var(--bd2, rgba(255, 255, 255, .12));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, .12));
     border-radius: 28px;
     padding: 6px 8px;
     display: flex;

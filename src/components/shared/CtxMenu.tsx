@@ -1,13 +1,21 @@
-import { Message } from "@/src/types"
+import type { MessageBundle } from "@/src/types/pb-chat.types"
 import { memo } from "react"
 
 export interface CtxTarget {
     x: number
     y: number
     id: string
-    msg: Message
+    msg: MessageBundle
     isMine: boolean
     text: string
+}
+
+interface MenuItem {
+    key: string
+    icon: string
+    label: string
+    sep?: boolean
+    red?: boolean
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -17,7 +25,7 @@ export const CtxMenu = memo(({ ctx, onAction }: {
     ctx: CtxTarget
     onAction: (action: string) => void
 }) => {
-    const items = [
+    const items: MenuItem[] = [
         { key: 'reply', icon: '↩️', label: 'Reply' },
         { key: 'react', icon: '😊', label: 'React' },
         { key: 'star', icon: '⭐', label: 'Star' },
@@ -56,7 +64,7 @@ export const CtxMenu = memo(({ ctx, onAction }: {
                         style={{
                             display: 'flex', alignItems: 'center', gap: 10,
                             padding: '9px 13px', borderRadius: 10, cursor: 'pointer',
-                            fontSize: 13, fontWeight: 500, color: (item as any).red ? 'var(--ac3)' : 'var(--tx)',
+                            fontSize: 13, fontWeight: 500, color: item.red ? 'var(--ac3)' : 'var(--tx)',
                             transition: 'background .12s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--s3)')}
@@ -71,4 +79,6 @@ export const CtxMenu = memo(({ ctx, onAction }: {
     )
 })
 CtxMenu.displayName = 'CtxMenu'
+
+
 

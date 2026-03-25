@@ -9,6 +9,7 @@ import {
     useMuted, useCamOff, useCallActions,
     useLocalVideoRef, useRemoteVideoRef,
 } from '@/src/hooks/useCallingStore'
+import { Camera, CameraOff, Expand, Mic, MicOff, Phone } from 'lucide-react'
 
 /* ── Types ── */
 type Mode = 'small' | 'medium' | 'free'
@@ -83,14 +84,6 @@ const IBtn = memo(({ onClick, danger, active, title, size = 32, children }: {
     >{children}</button>
 ))
 IBtn.displayName = 'IBtn'
-
-/* ── SVG icons ── */
-const IcoPhone = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10.7 11.7A10 10 0 0 1 1.5 3.5M5 3a2 2 0 0 0-.3 1 6.5 6.5 0 0 0 .3 1.6 1 1 0 0 1-.2 1L4 7.5M12.5 12.5l-.8-.9a1 1 0 0 0-1-.2 6.5 6.5 0 0 1-1.6.3 1 1 0 0 1-.8-1v-.2M14.5 11.5v2a1 1 0 0 1-1 1 9.8 9.8 0 0 1-3-.8" /><path d="M1 1l14 14" /></svg>
-const IcoMic = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="5.5" y="1" width="5" height="8" rx="2.5" /><path d="M2.5 8A5.5 5.5 0 0 0 8 13.5 5.5 5.5 0 0 0 13.5 8" /><path d="M8 13.5V15M5.5 15h5" /></svg>
-const IcoMicOff = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5.5 5v4a2.5 2.5 0 0 0 3.6 2.3M8 1a2.5 2.5 0 0 1 2.5 2.5v2.5" /><path d="M2.5 8A5.5 5.5 0 0 0 8 13.5 5.5 5.5 0 0 0 13.5 8" /><path d="M8 13.5V15M5.5 15h5" /><path d="M1 1l14 14" /></svg>
-const IcoCam = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="4.5" width="9" height="7" rx="1.5" /><path d="M10 6.5l5-2v7l-5-2V6.5Z" /></svg>
-const IcoCamOff = () => <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10 6.5l5-2v7l-5-2" /><rect x="1" y="4.5" width="9" height="7" rx="1.5" /><path d="M1 1l14 14" /></svg>
-const IcoExpand = () => <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9.5 1.5H14.5V6.5M6.5 14.5H1.5V9.5M14.5 1.5L9 7M7 9L1.5 14.5" /></svg>
 
 /* ── Resize handle ── */
 function ResizeHandle({ dir, onResizeStart }: {
@@ -206,7 +199,7 @@ export default function FloatingCallPiP() {
 
     const name = callData.isIncoming ? (callData.callerName ?? 'Unknown') : callData.peerName
     const photo = callData.isIncoming ? (callData.callerPhoto ?? undefined) : callData.peerPhoto
-    const initials = name.split(' ').map(w => w[0] ?? '').join('').substring(0, 2).toUpperCase()
+    const initials = String(name).split(' ').map((w: string) => w[0] ?? '').join('').substring(0, 2).toUpperCase()
     const isSmall = mode === 'small'
     const isMedium = mode === 'medium' || mode === 'free'
     const ctrlSize = isSmall ? 28 : 32
@@ -310,18 +303,18 @@ export default function FloatingCallPiP() {
                 }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                         <IBtn onClick={e => { e.stopPropagation(); toggleMute() }} active={muted} title={muted ? 'Unmute' : 'Mute'} size={ctrlSize}>
-                            {muted ? <IcoMicOff /> : <IcoMic />}
+                            {muted ? <MicOff /> : <Mic />}
                         </IBtn>
                         <IBtn onClick={e => { e.stopPropagation(); toggleCam() }} active={camOff} title={camOff ? 'Show cam' : 'Hide cam'} size={ctrlSize}>
-                            {camOff ? <IcoCamOff /> : <IcoCam />}
+                            {camOff ? <CameraOff /> : <Camera />}
                         </IBtn>
                     </div>
                     <IBtn onClick={e => { e.stopPropagation(); endCall() }} danger title="End call" size={isSmall ? 32 : 38}>
-                        <IcoPhone />
+                        <Phone />
                     </IBtn>
                     <div style={{ display: 'flex', gap: 6 }}>
                         <IBtn onClick={e => { e.stopPropagation(); expand() }} title="Expand" size={ctrlSize}>
-                            <IcoExpand />
+                            <Expand />
                         </IBtn>
                         {!isSmall && (
                             <IBtn onClick={e => { e.stopPropagation(); cycleMode() }} title="Change size" size={ctrlSize}>

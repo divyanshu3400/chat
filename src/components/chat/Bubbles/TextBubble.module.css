@@ -52,7 +52,7 @@
 }
 
 .theirs:hover {
-    border-color: rgba(255, 255, 255, 0.14);
+    border-color: var(--border-subtle, rgba(255, 255, 255, 0.14));
     box-shadow: 0 6px 22px rgba(0, 0, 0, 0.38);
 }
 
@@ -126,8 +126,8 @@
 .content code {
     font-family: var(--mono, 'JetBrains Mono', monospace);
     font-size: 12.5px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: var(--bg-void, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--border-dim, rgba(255, 255, 255, 0.09));
     border-radius: 5px;
     padding: 1px 6px;
 }
@@ -140,15 +140,15 @@
 .content pre {
     font-family: var(--mono, 'JetBrains Mono', monospace);
     font-size: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--bg-void, rgba(0, 0, 0, 0.4));
+    border: 1px solid var(--border-dim, rgba(255, 255, 255, 0.07));
     border-radius: 10px;
     padding: 10px 12px;
     overflow-x: auto;
     margin: 6px 0;
     line-height: 1.6;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: var(--border-dim, rgba(255, 255, 255, 0.1)) transparent;
 }
 
 .content pre code {

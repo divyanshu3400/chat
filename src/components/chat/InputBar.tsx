@@ -6,7 +6,7 @@ import React, {
 } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './InputBar.module.css'
-import { useDecrypted, useStore } from '@/src/lib/store'
+import { useDecrypted, useStore } from '@/src/store/store'
 import { Camera, File } from 'lucide-react'
 
 /* ─── constants ─── */
@@ -415,7 +415,7 @@ export default function InputBar({
     },
   ]
 
-  const decryptedText = useDecrypted(replyTo?.id)
+  const decryptedText = useDecrypted(replyTo?.messageId)
 
   const charCount = text.length
   const overLimit = charCount > MAX_CHARS
@@ -442,7 +442,7 @@ export default function InputBar({
           <div className={styles.replyPreview}>
             <div className={styles.replyBar} />
             <div className={styles.replyInner}>
-              <div className={styles.replyName}>↩ {replyTo.senderName}</div>
+              <div className={styles.replyName}>↩ {replyTo.bundle?.message.content}</div>
               <div className={styles.replyText}>{decryptedText}</div>
             </div>
             <button onClick={(e) => {

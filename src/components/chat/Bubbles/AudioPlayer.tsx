@@ -2,7 +2,7 @@ import { fmtDur } from "@/src/lib/utils";
 import { memo, useMemo, useRef, useState } from "react";
 
 /* ── AUDIO PLAYER ── */
-export const AudioPlayer = memo(({ url, duration, mine }: { url: string; duration?: number; mine: boolean }) => {
+export const AudioPlayer = memo(({ url, duration, mine }: { url: string; duration?: number | string; mine: boolean }) => {
     const [playing, setPlaying] = useState(false)
     const [progress, setProgress] = useState(0)
     const [speed, setSpeed] = useState(1)

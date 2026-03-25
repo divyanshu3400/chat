@@ -8,83 +8,201 @@
    CIPHER v2.0 — Design System
    Theme : Deep Navy + Neon Cyan glassmorphism
 ═══════════════════════════════════════════════════════════════════════ */
-:root {
+:root,
+[data-theme="dark"] {
   --font: 'Syne', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', monospace;
-  --bg: #0B0E1A;
-  --bg2: #0F1320;
-  --bg3: #141828;
+
+  --bg: #0f1724;
+  --bg1: #0b1220;
+  --bg2: #131c2b;
+  --bg3: #1a2436;
+  --bg-secondary: #101827;
+  --bg-void: #0a101b;
+
   --glass: rgba(255, 255, 255, 0.05);
   --glass2: rgba(255, 255, 255, 0.08);
   --glass3: rgba(255, 255, 255, 0.12);
-  --border: rgba(255, 255, 255, 0.10);
-  --border2: rgba(255, 255, 255, 0.16);
-  --tx: #F0F4FF;
-  --tx2: #A8B4D0;
-  --tx3: #6B7A9E;
-  --ac: #00F5FF;
-  --ac-glow: rgba(0, 245, 255, 0.20);
-  --ac-dim: rgba(0, 245, 255, 0.08);
-  --ac2: #7C6EFF;
-  --ac3: #FF4E6A;
-  --ac3-glow: rgba(255, 78, 106, 0.22);
-  --ac3-dim: rgba(255, 78, 106, 0.10);
-  --ac4: #00F5A0;
-  --ac5: #FFB830;
-  --green: var(--ac4);
-  --red: var(--ac3);
-  --amber: var(--ac5);
-  --badge-tx: #06080F;
-  --accent-sec: var(--ac2);
-  --ac-edit: #6366f1;
-  --ac-edit-glow: rgba(99, 102, 241, 0.22);
-  --ac-edit-dim: rgba(99, 102, 241, 0.10);
-  --bg-void: var(--bg);
-  --border-subtle: var(--border);
-  --border-dim: var(--border);
-  --tx-muted: var(--tx3);
+  --border: rgba(148, 163, 184, 0.18);
+  --border2: rgba(148, 163, 184, 0.28);
+  --border-subtle: rgba(148, 163, 184, 0.16);
+  --border-dim: rgba(148, 163, 184, 0.12);
+
+  --tx: #f4f7fb;
+  --tx2: #c2ccda;
+  --tx3: #8f9cb0;
+  --tx-muted: #8f9cb0;
+
+  --ac: #5ea0ff;
+  --ac-rgb: 94, 160, 255;
+  --ac-glow: rgba(94, 160, 255, 0.28);
+  --ac-dim: rgba(94, 160, 255, 0.12);
+  --ac2: #7c8cff;
+  --ac3: #ef6a7b;
+  --ac3-glow: rgba(239, 106, 123, 0.24);
+  --ac3-dim: rgba(239, 106, 123, 0.12);
+  --ac4: #34c78f;
+  --ac5: #f1b24a;
+  --green: #34c78f;
+  --red: #ef6a7b;
+  --amber: #f1b24a;
+  --badge-tx: #08111d;
   --accent: var(--ac);
   --accent-glow: var(--ac-glow);
   --accent-muted: var(--ac-dim);
+  --accent-sec: var(--ac2);
+  --ac-edit: #7c8cff;
+  --ac-edit-glow: rgba(124, 140, 255, 0.22);
+  --ac-edit-dim: rgba(124, 140, 255, 0.1);
+
   --font-mono: var(--mono);
   --s1: var(--bg2);
   --s2: var(--bg3);
-  --s3: var(--glass3);
+  --s3: rgba(255, 255, 255, 0.08);
   --bd: var(--border);
   --bd2: var(--border2);
-  --input-bg: rgba(11, 14, 26, 0.88);
-  --conv-active-bg: linear-gradient(135deg, rgba(0, 245, 255, 0.10), rgba(124, 110, 255, 0.06));
-  --conv-active-border: rgba(0, 245, 255, 0.20);
-  --story-ring-gradient: linear-gradient(135deg, #00F5FF, #FF4E6A);
-  --backdrop-bg: rgba(0, 0, 0, 0.55);
-  --bubble-mine-bg: linear-gradient(135deg, #00F5FF, #7C6EFF);
-  --bubble-mine-tx: #F0F4FF;
-  --reply-mine-bg: rgba(255, 255, 255, 0.10);
-  --reply-mine-border: rgba(255, 255, 255, 0.55);
-  --reply-mine-tx: rgba(255, 255, 255, 0.88);
-  --tick-read: #00F5FF;
-  --tick-delivered: rgba(255, 255, 255, 0.65);
-  --tick-sent: rgba(255, 255, 255, 0.35);
-  --media-badge-bg: rgba(0, 0, 0, 0.55);
-  --media-overlay: rgba(0, 0, 0, 0.30);
-  --play-btn-bg: rgba(255, 255, 255, 0.92);
-  --play-btn-tx: #06080F;
-  --file-icon-mine: rgba(255, 255, 255, 0.14);
-  --progress-mine: rgba(255, 255, 255, 0.18);
+  --input-bg: rgba(10, 16, 27, 0.88);
+  --conv-active-bg: linear-gradient(135deg, rgba(94, 160, 255, 0.14), rgba(124, 140, 255, 0.08));
+  --conv-active-border: rgba(94, 160, 255, 0.24);
+  --story-ring-gradient: linear-gradient(135deg, #5ea0ff, #ef6a7b);
+  --backdrop-bg: rgba(3, 8, 18, 0.58);
+  --bubble-mine-bg: linear-gradient(135deg, #2563eb, #4f7cff);
+  --bubble-mine-tx: #f8fbff;
+  --bubble-theirs-bg: #1a2436;
+  --bubble-theirs-tx: #edf2f7;
+  --reply-mine-bg: rgba(255, 255, 255, 0.12);
+  --reply-mine-border: rgba(255, 255, 255, 0.5);
+  --reply-mine-tx: rgba(255, 255, 255, 0.9);
+  --tick-read: #7fc1ff;
+  --tick-delivered: rgba(226, 232, 240, 0.72);
+  --tick-sent: rgba(226, 232, 240, 0.42);
+  --media-badge-bg: rgba(7, 12, 22, 0.64);
+  --media-overlay: rgba(6, 11, 20, 0.3);
+  --play-btn-bg: rgba(248, 250, 252, 0.94);
+  --play-btn-tx: #08111d;
+  --file-icon-mine: rgba(255, 255, 255, 0.16);
+  --progress-mine: rgba(255, 255, 255, 0.22);
   --dl-btn-mine-bg: rgba(255, 255, 255, 0.14);
-  --dl-btn-mine-border: rgba(255, 255, 255, 0.22);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  --shadow2: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --dl-btn-mine-border: rgba(255, 255, 255, 0.24);
+  --shadow: 0 20px 48px rgba(2, 8, 20, 0.38);
+  --shadow2: 0 8px 18px rgba(2, 8, 20, 0.24);
+
+  --color-primary: #5ea0ff;
+  --color-secondary: #47c0d9;
+  --color-accent: #34c78f;
+  --color-danger: #ef6a7b;
+  --color-warning: #f1b24a;
+  --color-bg-dark: #0b1220;
+  --color-bg-darker: #070d18;
+  --color-text-primary: #f4f7fb;
+  --color-text-secondary: rgba(194, 204, 218, 0.8);
+  --color-text-muted: rgba(143, 156, 176, 0.72);
+  --color-border: rgba(148, 163, 184, 0.16);
+  --color-border-light: rgba(148, 163, 184, 0.08);
+  --color-glass: rgba(255, 255, 255, 0.045);
+
   --r: 12px;
   --r2: 18px;
   --r3: 24px;
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --bubble-mine-bg: #2563eb;
-  --bubble-mine-tx: #ffffff;
-  --bubble-theirs-bg: #1e2535;
-  --bubble-theirs-tx: #e2e6f0;
-  --ac-glow: rgba(37, 99, 235, 0.35);
-  --tick-read: #7dd3fc;
+}
+
+[data-theme="light"] {
+  --font: 'Syne', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  --bg: #f3f6fb;
+  --bg1: #eef3f9;
+  --bg2: #ffffff;
+  --bg3: #f7f9fc;
+  --bg-secondary: #e8eef6;
+  --bg-void: #dde6f1;
+
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass2: rgba(255, 255, 255, 0.86);
+  --glass3: rgba(255, 255, 255, 0.94);
+  --border: rgba(100, 116, 139, 0.18);
+  --border2: rgba(100, 116, 139, 0.28);
+  --border-subtle: rgba(100, 116, 139, 0.14);
+  --border-dim: rgba(100, 116, 139, 0.1);
+
+  --tx: #132033;
+  --tx2: #46556b;
+  --tx3: #708197;
+  --tx-muted: #708197;
+
+  --ac: #2563eb;
+  --ac-rgb: 37, 99, 235;
+  --ac-glow: rgba(37, 99, 235, 0.18);
+  --ac-dim: rgba(37, 99, 235, 0.1);
+  --ac2: #5b6cff;
+  --ac3: #dc5a70;
+  --ac3-glow: rgba(220, 90, 112, 0.16);
+  --ac3-dim: rgba(220, 90, 112, 0.1);
+  --ac4: #1f9d71;
+  --ac5: #cc8a1d;
+  --green: #1f9d71;
+  --red: #dc5a70;
+  --amber: #cc8a1d;
+  --badge-tx: #ffffff;
+  --accent: var(--ac);
+  --accent-glow: var(--ac-glow);
+  --accent-muted: var(--ac-dim);
+  --accent-sec: var(--ac2);
+  --ac-edit: #5b6cff;
+  --ac-edit-glow: rgba(91, 108, 255, 0.18);
+  --ac-edit-dim: rgba(91, 108, 255, 0.09);
+
+  --font-mono: var(--mono);
+  --s1: var(--bg2);
+  --s2: var(--bg3);
+  --s3: rgba(37, 99, 235, 0.06);
+  --bd: var(--border);
+  --bd2: var(--border2);
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --conv-active-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(91, 108, 255, 0.06));
+  --conv-active-border: rgba(37, 99, 235, 0.18);
+  --story-ring-gradient: linear-gradient(135deg, #2563eb, #dc5a70);
+  --backdrop-bg: rgba(15, 23, 36, 0.16);
+  --bubble-mine-bg: linear-gradient(135deg, #2563eb, #4f7cff);
+  --bubble-mine-tx: #f8fbff;
+  --bubble-theirs-bg: #ffffff;
+  --bubble-theirs-tx: #132033;
+  --reply-mine-bg: rgba(255, 255, 255, 0.22);
+  --reply-mine-border: rgba(255, 255, 255, 0.68);
+  --reply-mine-tx: rgba(255, 255, 255, 0.95);
+  --tick-read: #2563eb;
+  --tick-delivered: rgba(70, 85, 107, 0.72);
+  --tick-sent: rgba(70, 85, 107, 0.5);
+  --media-badge-bg: rgba(19, 32, 51, 0.52);
+  --media-overlay: rgba(19, 32, 51, 0.18);
+  --play-btn-bg: rgba(255, 255, 255, 0.96);
+  --play-btn-tx: #132033;
+  --file-icon-mine: rgba(255, 255, 255, 0.2);
+  --progress-mine: rgba(255, 255, 255, 0.26);
+  --dl-btn-mine-bg: rgba(255, 255, 255, 0.16);
+  --dl-btn-mine-border: rgba(255, 255, 255, 0.3);
+  --shadow: 0 20px 40px rgba(15, 23, 36, 0.12);
+  --shadow2: 0 8px 20px rgba(15, 23, 36, 0.08);
+
+  --color-primary: #2563eb;
+  --color-secondary: #0f9fbd;
+  --color-accent: #1f9d71;
+  --color-danger: #dc5a70;
+  --color-warning: #cc8a1d;
+  --color-bg-dark: #eef3f9;
+  --color-bg-darker: #e3ebf5;
+  --color-text-primary: #132033;
+  --color-text-secondary: rgba(70, 85, 107, 0.84);
+  --color-text-muted: rgba(112, 129, 151, 0.84);
+  --color-border: rgba(100, 116, 139, 0.18);
+  --color-border-light: rgba(100, 116, 139, 0.1);
+  --color-glass: rgba(255, 255, 255, 0.8);
+
+  --r: 12px;
+  --r2: 18px;
+  --r3: 24px;
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -124,7 +242,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-image: linear-gradient(color-mix(in srgb, var(--tx3) 10%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--tx3) 10%, transparent) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 0;
@@ -548,7 +666,7 @@ select.field-input {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--backdrop-bg);
   backdrop-filter: blur(6px);
   display: none;
   align-items: flex-end;
@@ -1429,3 +1547,4 @@ code {
   color: var(--ac);
   font-size: 12px;
 }
+

@@ -1,5 +1,5 @@
-import { Chat } from '@/src/types'
 import hljs from 'highlight.js'
+import { Prefs, UserPreferencesRecord } from '../types/pb-collections.types'
 
 function esc(s: string) {
   return String(s || '')
@@ -28,11 +28,16 @@ export function mdRender(text: string): string {
   return s
 }
 
-export function fmtTime(ts: number | null | undefined): string {
+export function fmtTime(ts: string | number | null | undefined): string {
   if (!ts) return ''
-  return new Date(+ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
 
+  const date = new Date(typeof ts === 'string' && !isNaN(Number(ts)) ? +ts : ts)
+
+  // Optional: Check if the date is valid to avoid returning "Invalid Date"
+  if (isNaN(date.getTime())) return ''
+
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
 export function fmtBytes(b: number): string {
   if (b < 1024) return b + ' B'
   if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'
@@ -112,33 +117,6 @@ export const formatDate = (timestamp: number): string => {
 export const truncateText = (text: string, maxLength: number): string => {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 3) + '...'
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CHAT UTILITIES
-═══════════════════════════════════════════════════════════════════════════ */
-
-/**
- * Sort chats by most recent first
- */
-export const sortChatsByRecent = (chats: Chat[]): Chat[] => {
-  return [...chats].sort((a, b) => {
-    const timeA = a.timestamp || 0
-    const timeB = b.timestamp || 0
-    return timeB - timeA
-  })
-}
-
-/**
- * Filter chats by search query
- */
-export const filterChats = (chats: Chat[], query: string): Chat[] => {
-  const lowerQuery = query.toLowerCase()
-  return chats.filter(
-    (chat) =>
-      chat.name.toLowerCase().includes(lowerQuery) ||
-      chat.lastMessage?.toLowerCase().includes(lowerQuery)
-  )
 }
 
 /**
@@ -371,4 +349,17 @@ export function stripUndefined<T>(obj: T): T {
     ) as any
   }
   return obj
+}
+
+
+export function prefsFromRecord(record: UserPreferencesRecord | null | undefined): Prefs {
+  return {
+    theme: record?.theme ?? 'dark',
+    accent: record?.accent ?? 'indigo',
+    sound: record?.sound ?? true,
+    enterSend: record?.enterSend ?? true,
+    aiSuggest: record?.aiSuggest ?? true,
+    readReceipts: record?.readReceipts ?? true,
+    push: record?.push ?? false,
+  }
 }

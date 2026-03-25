@@ -8,15 +8,22 @@ interface Props {
     width?: number
     height?: number
     thumbnailUrl?: string
-    duration?: number
+    duration?: number | string
     mine: boolean
     onLightbox: (url: string, type: 'video') => void
 }
 
-function fmtDur(s: number) {
-    const m = Math.floor(s / 60)
-    const sec = Math.floor(s % 60)
-    return `${m}:${sec.toString().padStart(2, '0')}`
+function fmtDur(s: number | string) {
+    // Convert to number to handle string inputs safely
+    const totalSeconds = Number(s);
+
+    // Optional: Handle NaN if the string isn't a valid number
+    if (isNaN(totalSeconds)) return "0:00";
+
+    const m = Math.floor(totalSeconds / 60);
+    const sec = Math.floor(totalSeconds % 60);
+
+    return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 export const VideoBubble = memo(({ url, width, height, thumbnailUrl, duration, mine, onLightbox }: Props) => {

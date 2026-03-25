@@ -1,4 +1,4 @@
-import { useStore } from "@/src/lib/store";
+import { useStore } from "@/src/store/store";
 import { memo, useMemo } from "react";
 
 /* ── REACTION ROW ── */
@@ -22,7 +22,7 @@ export const ReactionRow = memo(({ id, reactions, mine, onReact, onShowReactors 
             justifyContent: mine ? 'flex-end' : 'flex-start',
         }}>
             {Object.entries(counts).map(([emoji, { count, uids }]) => {
-                const iMe = me ? uids.includes(me.uid) : false
+                const iMe = me ? uids.includes(me.id) : false
                 return (
                     <button
                         key={emoji}

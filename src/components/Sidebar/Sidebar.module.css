@@ -122,22 +122,22 @@
    WRAP — Sidebar shell
 ═══════════════════════════════════════════════════════════════════════ */
 .wrap {
-  --sb-bg: color-mix(in srgb, var(--bg1, #0d0d12) 96%, transparent);
-  --sb-surface: color-mix(in srgb, var(--bg2, #141420) 90%, transparent);
-  --sb-glass: rgba(255, 255, 255, 0.03);
-  --sb-border: rgba(255, 255, 255, 0.06);
-  --sb-border2: rgba(255, 255, 255, 0.10);
-  --sb-border-glow: rgba(var(--ac-rgb, 139, 92, 246), 0.35);
-  --sb-tx: var(--tx, #f0f0f8);
-  --sb-tx2: var(--tx2, #9898b8);
-  --sb-tx3: var(--tx3, #55556a);
-  --sb-ac: var(--ac, #8b5cf6);
-  --sb-ac-glow: var(--ac-glow, rgba(139, 92, 246, 0.45));
-  --sb-ac-dim: var(--ac-dim, rgba(139, 92, 246, 0.12));
-  --sb-green: var(--green, #22d3a0);
-  --sb-danger: var(--ac3, #f87171);
-  --sb-danger-dim: var(--ac3-dim, rgba(248, 113, 113, 0.12));
-  --sb-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --sb-bg: color-mix(in srgb, var(--bg2) 94%, transparent);
+  --sb-surface: color-mix(in srgb, var(--bg3) 92%, transparent);
+  --sb-glass: var(--glass);
+  --sb-border: var(--border-subtle);
+  --sb-border2: var(--border2);
+  --sb-border-glow: var(--accent-glow);
+  --sb-tx: var(--tx);
+  --sb-tx2: var(--tx2);
+  --sb-tx3: var(--tx3);
+  --sb-ac: var(--accent);
+  --sb-ac-glow: var(--accent-glow);
+  --sb-ac-dim: var(--accent-muted);
+  --sb-green: var(--green);
+  --sb-danger: var(--red);
+  --sb-danger-dim: var(--ac3-dim);
+  --sb-shadow: var(--shadow);
   --sb-t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   --sb-font: 'Outfit', 'Syne', system-ui, sans-serif;
   --sb-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
@@ -248,7 +248,7 @@
   position: relative;
   z-index: 1;
   border-bottom: 1px solid var(--sb-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--glass, rgba(255, 255, 255, 0.04)) 0%, transparent 100%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -277,9 +277,9 @@
 }
 
 .profileChip:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sb-glass);
   border-color: var(--sb-border2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
 .profileAvatarRing {
@@ -402,7 +402,7 @@
 }
 
 .searchBoxFocused {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--sb-glass) 88%, transparent);
   border-color: var(--sb-border-glow);
   box-shadow: 0 0 0 3px var(--sb-ac-dim), 0 4px 16px rgba(0, 0, 0, 0.3);
 }
@@ -521,7 +521,7 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--sb-tx);
   line-height: 1;
   box-shadow: 0 0 8px var(--sb-ac-glow);
 }
@@ -677,7 +677,7 @@
   top: 2px;
   right: 2px;
   background: var(--sb-ac);
-  color: #fff;
+  color: var(--sb-tx);
   font-size: 7px;
   font-weight: 900;
   font-family: var(--sb-mono);
@@ -755,7 +755,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+  background: linear-gradient(135deg, var(--glass, rgba(255, 255, 255, 0.04)) 0%, transparent 60%);
   opacity: 0;
   transition: opacity var(--sb-t);
   pointer-events: none;
@@ -767,7 +767,7 @@
 }
 
 .convRowDefault:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--glass, rgba(255, 255, 255, 0.035));
   border-color: var(--sb-border);
   transform: translateX(2px);
 }
@@ -775,7 +775,7 @@
 .convRowActive {
   background: var(--sb-ac-dim);
   border-color: var(--sb-border-glow);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
 .convRowActive::before {
@@ -783,7 +783,7 @@
 }
 
 .convRowFocused {
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--sb-glass) 72%, transparent);
   border-color: var(--sb-border);
 }
 
@@ -941,7 +941,7 @@
 
 .unreadBadge {
   background: var(--sb-ac);
-  color: #fff;
+  color: var(--sb-tx);
   font-size: 9px;
   font-weight: 800;
   font-family: var(--sb-mono);
@@ -981,7 +981,7 @@
   height: 46px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: linear-gradient(90deg, var(--sb-glass) 25%, rgba(255, 255, 255, 0.06) 50%, var(--sb-glass) 75%);
+  background: linear-gradient(90deg, var(--sb-glass) 25%, var(--border-dim, rgba(255, 255, 255, 0.06)) 50%, var(--sb-glass) 75%);
   background-size: 300px 100%;
   animation: skelShimmer 1.6s ease infinite;
 }
@@ -993,7 +993,7 @@
 .skeletonLine {
   height: 9px;
   border-radius: 5px;
-  background: linear-gradient(90deg, var(--sb-glass) 25%, rgba(255, 255, 255, 0.06) 50%, var(--sb-glass) 75%);
+  background: linear-gradient(90deg, var(--sb-glass) 25%, var(--border-dim, rgba(255, 255, 255, 0.06)) 50%, var(--sb-glass) 75%);
   background-size: 300px 100%;
   margin-bottom: 9px;
   animation: skelShimmer 1.6s ease infinite;
@@ -1054,7 +1054,7 @@
 .emptyCtaAccent {
   background: var(--sb-ac);
   border: none;
-  color: #fff;
+  color: var(--sb-tx);
   box-shadow: 0 0 20px var(--sb-ac-glow);
 }
 
@@ -1094,7 +1094,7 @@
   border-radius: 18px;
   padding: 6px;
   min-width: 200px;
-  box-shadow: var(--sb-shadow), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: var(--sb-shadow), 0 0 0 1px var(--border-subtle, rgba(255, 255, 255, 0.04));
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
   animation: ctxIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1244,8 +1244,8 @@
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: #fff;
-  -webkit-text-fill-color: #fff;
+  color: var(--sb-tx);
+  -webkit-text-fill-color: var(--sb-tx);
   box-shadow: 0 0 10px var(--sb-ac-glow);
   flex-shrink: 0;
 }
@@ -1391,7 +1391,7 @@
   top: 3px;
   right: calc(50% - 18px);
   background: var(--sb-ac);
-  color: #fff;
+  color: var(--sb-tx);
   font-size: 7.5px;
   font-weight: 800;
   font-family: var(--sb-mono);
@@ -1405,3 +1405,4 @@
   border: 1.5px solid var(--sb-bg);
   box-shadow: 0 0 6px var(--sb-ac-glow);
 }
+

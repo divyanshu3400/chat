@@ -57,7 +57,7 @@ export default function ActiveCallBar() {
     const photo = callData.isIncoming
         ? callData.callerPhoto
         : callData.peerPhoto
-    const initials = name.split(' ').map(w => w[0] ?? '').join('').substring(0, 2).toUpperCase()
+    const initials = name.split(' ').map((w: string) => w[0] ?? '').join('').substring(0, 2).toUpperCase()
 
     return (
         <>

@@ -1,219 +1,27 @@
-'use client'
+// 'use client';
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
-interface Props {
-  onSignIn: () => void
+import s from './AuthScreen.module.css';
+import { useAuthStore } from '../store/auth.store';
+import { Backpack, Check, Eye, EyeOff, LockIcon, LucideMailWarning, Mail, Phone, Shield, SkipBack, User } from 'lucide-react';
+import { useScreen } from '../lib/ui';
+
+type MfaMethod = 'totp' | 'email';
+
+function getStrength(pw: string): 0 | 1 | 2 | 3 | 4 {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return Math.min(score, 4) as 0 | 1 | 2 | 3 | 4;
 }
 
-/* ─────────────────────────────────────────────
-   KEYFRAMES injected once into <head>
-───────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap');
+const STRENGTH_CLASSES = ['', s.strengthWeak, s.strengthFair, s.strengthGood, s.strengthStrong];
 
-@keyframes cipher-float {
-  0%,100% { transform: translateY(0px) rotate(0deg); }
-  33%      { transform: translateY(-8px) rotate(1deg); }
-  66%      { transform: translateY(4px) rotate(-1deg); }
-}
-@keyframes cipher-pulse-ring {
-  0%   { transform: scale(1);   opacity: .6; }
-  100% { transform: scale(1.8); opacity: 0;  }
-}
-@keyframes cipher-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-@keyframes cipher-wordmark {
-  0%   { opacity:0; transform: scale(.75) translateY(24px); filter: blur(12px); }
-  100% { opacity:1; transform: scale(1)   translateY(0);    filter: blur(0);    }
-}
-@keyframes cipher-tagline {
-  0%   { opacity:0; transform: translateY(10px); }
-  100% { opacity:1; transform: translateY(0);    }
-}
-@keyframes cipher-card-in {
-  0%   { opacity:0; transform: translateY(32px) scale(.96); }
-  100% { opacity:1; transform: translateY(0)    scale(1);   }
-}
-@keyframes cipher-particle {
-  0%   { transform: translateY(0)    translateX(0)    scale(1);   opacity:.7; }
-  50%  { transform: translateY(-60px) translateX(20px) scale(1.2); opacity:1;  }
-  100% { transform: translateY(0)    translateX(0)    scale(1);   opacity:.7; }
-}
-@keyframes cipher-scan {
-  0%,100% { transform: scaleX(0); transform-origin: left; }
-  45%     { transform: scaleX(1); transform-origin: left; }
-  55%     { transform: scaleX(1); transform-origin: right; }
-  99%     { transform: scaleX(0); transform-origin: right; }
-}
-@keyframes cipher-badge-glow {
-  0%,100% { box-shadow: 0 0 12px rgba(16,185,129,.2); }
-  50%     { box-shadow: 0 0 24px rgba(16,185,129,.5); }
-}
-@keyframes cipher-btn-idle {
-  0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
-  50%     { box-shadow: 0 0 0 6px rgba(99,102,241,.08); }
-}
-
-.cipher-btn-google {
-  position: relative; overflow: hidden;
-  animation: cipher-btn-idle 3s ease-in-out infinite;
-}
-.cipher-btn-google::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg,
-    transparent 0%, rgba(255,255,255,.06) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: cipher-shimmer 3s ease-in-out infinite;
-}
-.cipher-btn-google:hover {
-  animation: none !important;
-  border-color: rgba(99,102,241,.8) !important;
-  box-shadow:
-    0 0 0 1px rgba(99,102,241,.5),
-    0 8px 32px rgba(99,102,241,.25),
-    inset 0 1px 0 rgba(255,255,255,.08) !important;
-  transform: translateY(-2px) !important;
-  background: rgba(255,255,255,.07) !important;
-}
-.cipher-btn-google:active {
-  transform: translateY(0) !important;
-}
-`
-
-/* ─────────────────────────────────────────────
-   NEURAL NETWORK CANVAS BACKGROUND
-───────────────────────────────────────────── */
-function NeuralCanvas() {
-  const ref = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = ref.current!
-    const ctx = canvas.getContext('2d')!
-    let raf: number
-    let W = 0, H = 0
-
-    const NODES = 55
-    type Node = { x: number; y: number; vx: number; vy: number; r: number }
-    let nodes: Node[] = []
-
-    function resize() {
-      W = canvas.width = window.innerWidth
-      H = canvas.height = window.innerHeight
-      nodes = Array.from({ length: NODES }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - .5) * .35,
-        vy: (Math.random() - .5) * .35,
-        r: Math.random() * 1.8 + .6,
-      }))
-    }
-
-    function draw(t: number) {
-      ctx.clearRect(0, 0, W, H)
-
-      // Move
-      nodes.forEach(n => {
-        n.x += n.vx; n.y += n.vy
-        if (n.x < 0 || n.x > W) n.vx *= -1
-        if (n.y < 0 || n.y > H) n.vy *= -1
-      })
-
-      // Edges
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x
-          const dy = nodes[i].y - nodes[j].y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          const maxDist = 160
-          if (dist < maxDist) {
-            const alpha = (1 - dist / maxDist) * .18
-            // Animate hue along edge
-            const hue = (t * .02 + i * 7) % 360
-            ctx.strokeStyle = `hsla(${hue},70%,65%,${alpha})`
-            ctx.lineWidth = .5
-            ctx.beginPath()
-            ctx.moveTo(nodes[i].x, nodes[i].y)
-            ctx.lineTo(nodes[j].x, nodes[j].y)
-            ctx.stroke()
-          }
-        }
-      }
-
-      // Nodes
-      nodes.forEach((n, i) => {
-        const hue = (t * .02 + i * 13) % 360
-        const pulse = Math.sin(t * .001 + i) * .5 + .5
-        ctx.beginPath()
-        ctx.arc(n.x, n.y, n.r + pulse * .6, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${hue},80%,70%,${.4 + pulse * .4})`
-        ctx.fill()
-      })
-
-      raf = requestAnimationFrame(draw)
-    }
-
-    resize()
-    window.addEventListener('resize', resize)
-    raf = requestAnimationFrame(draw)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
-  }, [])
-
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-    />
-  )
-}
-
-/* ─────────────────────────────────────────────
-   LOGO MARK SVG (the ⚡ cipher glyph)
-───────────────────────────────────────────── */
-function CipherMark({ size = 64 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
-      <defs>
-        <linearGradient id="cm-g1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="50%" stopColor="#06b6d4" />
-          <stop offset="100%" stopColor="#10b981" />
-        </linearGradient>
-        <linearGradient id="cm-g2" x1="64" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#f43f5e" stopOpacity=".6" />
-          <stop offset="100%" stopColor="#6366f1" stopOpacity=".2" />
-        </linearGradient>
-        <filter id="cm-glow">
-          <feGaussianBlur stdDeviation="2" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-      {/* Hexagon frame */}
-      <path
-        d="M32 4 L56 18 L56 46 L32 60 L8 46 L8 18 Z"
-        fill="none" stroke="url(#cm-g1)" strokeWidth="1.5" strokeLinejoin="round"
-        opacity=".8"
-      />
-      {/* Inner hex */}
-      <path
-        d="M32 14 L46 22 L46 42 L32 50 L18 42 L18 22 Z"
-        fill="url(#cm-g2)" stroke="url(#cm-g1)" strokeWidth=".5" strokeLinejoin="round"
-      />
-      {/* Lightning bolt */}
-      <path
-        d="M35 16 L26 33 L32 33 L29 48 L38 31 L32 31 Z"
-        fill="url(#cm-g1)" filter="url(#cm-glow)"
-      />
-    </svg>
-  )
-}
-
-/* ─────────────────────────────────────────────
-   GOOGLE ICON
-───────────────────────────────────────────── */
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
@@ -222,275 +30,589 @@ function GoogleIcon() {
       <path fill="#FBBC05" d="M10.8 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L2.5 13.4A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.5 10.7l8.3-6.1z" />
       <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.1 0-11.3-3.7-13.2-9L2.5 35.7C6.4 43.3 14.6 48 24 48z" />
     </svg>
-  )
+  );
 }
 
-/* ─────────────────────────────────────────────
-   FEATURE PILLS
-───────────────────────────────────────────── */
-const FEATURES = [
-  { icon: '🔐', label: 'E2E Encrypted' },
-  { icon: '⚡', label: 'Realtime' },
-  { icon: '🤖', label: '/ai Commands' },
-  { icon: '📞', label: 'HD Calls' },
-]
 
-/* ─────────────────────────────────────────────
-   MAIN AUTH SCREEN
-───────────────────────────────────────────── */
-export default function AuthScreen({ onSignIn }: Props) {
-  const [loading, setLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
+export default function AuthScreen() {
+  const {
+    initialized,
+    status,
+    user,
+    error,
+    otpCooldown,
+    initialize,
+    clearError,
+    clearMfa,
+    loginWithPassword,
+    loginWithGoogle,
+    register,
+    logout,
+    requestPasswordReset,
+    requestEmailOtp,
+    verifyEmailOtp,
+  } = useAuthStore(
+    useShallow((state) => ({
+      initialized: state.initialized,
+      status: state.status,
+      user: state.user,
+      error: state.error,
+      otpCooldown: state.otpCooldown,
+      initialize: state.initialize,
+      clearError: state.clearError,
+      clearMfa: state.clearMfa,
+      loginWithPassword: state.loginWithPassword,
+      loginWithGoogle: state.loginWithGoogle,
+      register: state.register,
+      logout: state.logout,
+      requestPasswordReset: state.requestPasswordReset,
+      requestEmailOtp: state.requestEmailOtp,
+      verifyEmailOtp: state.verifyEmailOtp,
+    })),
+  );
+  const { screen, setScreen } = useScreen();
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [mfaMethod, setMfaMethod] = useState<MfaMethod>('totp');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
-    // Inject CSS once
-    if (!document.getElementById('cipher-auth-css')) {
-      const style = document.createElement('style')
-      style.id = 'cipher-auth-css'
-      style.textContent = CSS
-      document.head.appendChild(style)
+    initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    if (status === 'mfa_required') {
+      setScreen('mfa');
     }
-    const t = setTimeout(() => setMounted(true), 50)
-    return () => clearTimeout(t)
-  }, [])
+    if (status === 'authenticated') {
+      clearMfa();
+    }
+  }, [initialized, status, clearMfa]);
 
-  async function handleSignIn() {
-    setLoading(true)
-    try { await onSignIn() }
-    finally { setLoading(false) }
-  }
+  const isBusy = status === 'loading' || status === 'initializing';
+  const otherAccount = user?.email ?? user?.name ?? null;
+  const isLogin = activeTab === 'login';
+  const pwStrength = getStrength(password);
 
+  const canSubmitOtp = useMemo(() => otp.join('').length === 6, [otp]);
+
+  const resetOtp = useCallback(() => {
+    setOtp(['', '', '', '', '', '']);
+    otpRefs.current[0]?.focus();
+  }, []);
+
+  const handleEmailLogin = useCallback(async () => {
+    if (!email.trim() || !password) {
+      clearError();
+      return;
+    }
+
+    try {
+      await loginWithPassword({
+        identity: email.trim(),
+        password,
+      });
+    } catch {
+      // state already handled in store
+    }
+  }, [clearError, email, loginWithPassword, password]);
+
+  const handleRegister = useCallback(async () => {
+    if (!name.trim() || !email.trim() || password.length < 8 || password !== confirmPw) {
+      return;
+    }
+
+    try {
+      await register({
+        name: name.trim(),
+        username: email.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
+        password,
+        passwordConfirm: confirmPw,
+      });
+    } catch {
+      // store handles error
+    }
+  }, [confirmPw, email, name, password, register]);
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!email.trim()) return;
+
+    try {
+      await requestPasswordReset(email.trim());
+      setScreen('forgot-success');
+    } catch {
+      // store handles error
+    }
+  }, [email, requestPasswordReset]);
+
+  const handleSendEmailOtp = useCallback(async () => {
+    if (!email.trim()) return;
+
+    try {
+      await requestEmailOtp(email.trim());
+    } catch {
+      // store handles error
+    }
+  }, [email, requestEmailOtp]);
+
+  const handleMfaVerify = useCallback(async () => {
+    const code = otp.join('');
+    if (code.length < 6) return;
+
+    try {
+      await verifyEmailOtp(code);
+      resetOtp();
+    } catch {
+      resetOtp();
+    }
+  }, [otp, resetOtp, verifyEmailOtp]);
+
+  const handleOtpChange = useCallback((index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+
+    setOtp((current) => {
+      const next = [...current];
+      next[index] = value.slice(-1);
+      return next;
+    });
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }, []);
+
+  const handleOtpKeyDown = useCallback(
+    (index: number, event: React.KeyboardEvent) => {
+      if (event.key === 'Backspace' && !otp[index] && index > 0) {
+        otpRefs.current[index - 1]?.focus();
+      }
+    },
+    [otp],
+  );
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 900,
-      background: '#050810',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '24px', overflow: 'hidden',
-      fontFamily: '"Geist", system-ui, sans-serif',
-    }}>
+    <div className={s.root}>
+      {/* Left side - Branding (hidden on mobile) */}
+      <div className={s.brandingSide}>
+        <div className={s.brandingVignette} />
 
-      {/* Neural network canvas */}
-      <NeuralCanvas />
+        <div className={s.brandingContent}>
+          <div className={s.brandingLogoWrap}>
+            {[0, 1, 2].map((index) => (
+              <div
+                key={index}
+                className={s.pulseRing}
+                style={{
+                  inset: -(index + 1) * 16,
+                  animationDelay: `${index * 0.6}s`,
+                  animationDuration: `${2.2 + index * 0.8}s`,
+                }}
+              />
+            ))}
+            <img
+              src="/icon-192.svg"
+              alt="Logo"
+              width={72}
+              height={72}
+              className={s.logoIcon}
+            />
+          </div>
 
-      {/* Radial gradient vignette */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: `
-          radial-gradient(ellipse 80% 60% at 50% 50%, transparent 20%, #050810 80%),
-          radial-gradient(ellipse 500px 500px at 20% 80%, rgba(99,102,241,.07) 0%, transparent 70%),
-          radial-gradient(ellipse 400px 400px at 80% 20%, rgba(6,182,212,.06) 0%, transparent 70%)
-        `,
-      }} />
+          <div className={s.brandingText}>
+            <h1 className={s.brandingTitle}>Cipher</h1>
+            <p className={s.brandingSubtitle}>The AI-era messenger</p>
+            <p className={s.brandingDescription}>
+              Experience secure, end-to-end encrypted communication powered by advanced AI.
+              Your conversations, your privacy, your control.
+            </p>
+          </div>
 
-      {/* Scan line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-        background: 'linear-gradient(90deg, transparent, rgba(99,102,241,.6), rgba(6,182,212,.6), transparent)',
-        animation: 'cipher-scan 4s ease-in-out infinite',
-        pointerEvents: 'none',
-      }} />
-
-      {/* ── CARD ── */}
-      <div style={{
-        position: 'relative', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        width: '100%', maxWidth: 400,
-        opacity: mounted ? 1 : 0,
-        transition: 'opacity .1s',
-      }}>
-
-        {/* Logo mark + pulse rings */}
-        <div style={{
-          position: 'relative', marginBottom: 28,
-          animation: 'cipher-float 6s ease-in-out infinite',
-        }}>
-          {/* Pulse rings */}
-          {[0, 1, 2].map(i => (
-            <div key={i} style={{
-              position: 'absolute',
-              inset: -(i + 1) * 14,
-              borderRadius: '50%',
-              border: `1px solid rgba(99,102,241,${.15 - i * .04})`,
-              animation: `cipher-pulse-ring ${2 + i * .8}s ease-out infinite`,
-              animationDelay: `${i * .6}s`,
-            }} />
-          ))}
-          <CipherMark size={72} />
-        </div>
-
-        {/* Wordmark */}
-        <div style={{
-          fontSize: 52, fontWeight: 900, letterSpacing: -2,
-          lineHeight: 1, marginBottom: 10,
-          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 40%, #10b981 70%, #6366f1 100%)',
-          backgroundSize: '200% auto',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          animation: 'cipher-wordmark .9s cubic-bezier(.34,1.56,.64,1) both, cipher-shimmer 4s linear infinite',
-        }}>
-          Cipher
-        </div>
-
-        {/* Tagline */}
-        <div style={{
-          fontFamily: '"Geist Mono", monospace',
-          fontSize: 11, color: 'rgba(148,163,184,.6)',
-          letterSpacing: '3px', textTransform: 'uppercase',
-          marginBottom: 36,
-          animation: 'cipher-tagline .7s ease both',
-          animationDelay: '.3s',
-        }}>
-          // the AI-era messenger
-        </div>
-
-        {/* Glass card */}
-        <div style={{
-          width: '100%',
-          background: 'rgba(255,255,255,.03)',
-          border: '1px solid rgba(255,255,255,.08)',
-          borderRadius: 24,
-          padding: '28px 24px',
-          backdropFilter: 'blur(24px)',
-          animation: 'cipher-card-in .6s cubic-bezier(.34,1.56,.64,1) both',
-          animationDelay: '.15s',
-          boxShadow: `
-            0 0 0 1px rgba(255,255,255,.04) inset,
-            0 32px 64px rgba(0,0,0,.4),
-            0 0 80px rgba(99,102,241,.06)
-          `,
-        }}>
-
-          {/* Card header */}
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: '#f1f5f9', marginBottom: 5 }}>
-              Welcome to Cipher
+          <div className={s.brandingFeatures}>
+            <div className={s.featureItem}>
+              <div className={s.featureIcon}>
+                <Shield />
+              </div>
+              <div className={s.featureText}>
+                <p className={s.featureName}>End-to-End Encrypted</p>
+                <p className={s.featureDesc}>Military-grade encryption on every message</p>
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(148,163,184,.7)', lineHeight: 1.6 }}>
-              Sign in to access your encrypted<br />conversations
+
+            <div className={s.featureItem}>
+              <div className={s.featureIcon}>
+                <Mail />
+              </div>
+              <div className={s.featureText}>
+                <p className={s.featureName}>AI-Powered</p>
+                <p className={s.featureDesc}>Intelligent assistance meets privacy</p>
+              </div>
+            </div>
+
+            <div className={s.featureItem}>
+              <div className={s.featureIcon}>
+                <Phone />
+              </div>
+              <div className={s.featureText}>
+                <p className={s.featureName}>Cross-Platform</p>
+                <p className={s.featureDesc}>Seamless sync across all your devices</p>
+              </div>
             </div>
           </div>
 
-          {/* Google Sign-In button */}
-          <button
-            className="cipher-btn-google"
-            onClick={handleSignIn}
-            disabled={loading}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: 10,
-              padding: '13px 20px', borderRadius: 12,
-              background: 'rgba(255,255,255,.05)',
-              border: '1px solid rgba(255,255,255,.12)',
-              color: '#f1f5f9', fontFamily: '"Geist", sans-serif',
-              fontWeight: 600, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all .25s cubic-bezier(.4,0,.2,1)',
-              opacity: loading ? .7 : 1, letterSpacing: '.1px',
-            }}
-          >
-            {loading
-              ? <LoadingSpinner />
-              : <><GoogleIcon /> Continue with Google</>
-            }
-          </button>
-
-          {/* Divider */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            margin: '20px 0', opacity: .4,
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.1)' }} />
-            <span style={{ fontSize: 11, color: 'rgba(148,163,184,.6)', fontFamily: '"Geist Mono",monospace' }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.1)' }} />
-          </div>
-
-          {/* Continue with email (coming soon) */}
-          <button
-            disabled
-            style={{
-              width: '100%', padding: '12px 20px', borderRadius: 12,
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,.06)',
-              color: 'rgba(148,163,184,.4)',
-              fontFamily: '"Geist", sans-serif', fontWeight: 600, fontSize: 14,
-              cursor: 'not-allowed', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 16 }}>✉</span>
-            Continue with Email
-            <span style={{
-              fontSize: 9, fontFamily: '"Geist Mono", monospace',
-              background: 'rgba(99,102,241,.15)', border: '1px solid rgba(99,102,241,.2)',
-              color: 'rgba(99,102,241,.6)', padding: '2px 6px', borderRadius: 20,
-              letterSpacing: 1,
-            }}>SOON</span>
-          </button>
-
-          {/* E2E badge */}
-          <div style={{
-            marginTop: 18, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: 7, padding: '9px 14px',
-            background: 'rgba(16,185,129,.06)',
-            border: '1px solid rgba(16,185,129,.15)',
-            borderRadius: 10, fontSize: 12,
-            color: 'rgba(16,185,129,.85)',
-            animation: 'cipher-badge-glow 3s ease-in-out infinite',
-            fontFamily: '"Geist Mono", monospace',
-          }}>
-            <span>🔐</span>
-            <span>End-to-end encrypted · Zero knowledge</span>
+          <div className={s.brandingFooter}>
+            <p className={s.brandingFooterText}>
+              Join thousands using Cipher for secure communication
+            </p>
           </div>
         </div>
 
-        {/* Feature pills row */}
-        <div style={{
-          display: 'flex', gap: 8, flexWrap: 'wrap',
-          justifyContent: 'center', marginTop: 20,
-        }}>
-          {FEATURES.map((f, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 11px',
-              background: 'rgba(255,255,255,.04)',
-              border: '1px solid rgba(255,255,255,.07)',
-              borderRadius: 20, fontSize: 11,
-              color: 'rgba(148,163,184,.6)',
-              fontFamily: '"Geist Mono", monospace',
-              animation: `cipher-card-in .5s ease both`,
-              animationDelay: `${.3 + i * .07}s`,
-            }}>
-              <span style={{ fontSize: 13 }}>{f.icon}</span>
-              {f.label}
-            </div>
-          ))}
+        <div className={s.brandingDecoration}>
+          <svg className={s.decorSvg} viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="grad1" cx="40%" cy="40%">
+                <stop offset="0%" stopColor="rgba(99, 102, 241, 0.2)" />
+                <stop offset="100%" stopColor="rgba(6, 182, 212, 0.05)" />
+              </radialGradient>
+              <filter id="blur">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+              </filter>
+            </defs>
+            <circle cx="200" cy="200" r="150" fill="url(#grad1)" filter="url(#blur)" />
+            <circle cx="100" cy="120" r="80" fill="rgba(99, 102, 241, 0.08)" opacity="0.5" />
+            <circle cx="300" cy="280" r="100" fill="rgba(6, 182, 212, 0.08)" opacity="0.4" />
+            <path d="M 100 200 Q 200 150 300 200 T 400 200" stroke="rgba(99, 102, 241, 0.15)" strokeWidth="2" fill="none" />
+          </svg>
         </div>
+      </div>
 
-        {/* Footer */}
-        <div style={{
-          marginTop: 20, fontSize: 11,
-          color: 'rgba(71,85,105,.7)',
-          textAlign: 'center', lineHeight: 1.7,
-          fontFamily: '"Geist Mono", monospace',
-        }}>
-          By signing in you agree to our{' '}
-          <a href="#" style={{ color: 'rgba(99,102,241,.6)', textDecoration: 'none' }}>Terms</a>
-          {' & '}
-          <a href="#" style={{ color: 'rgba(99,102,241,.6)', textDecoration: 'none' }}>Privacy</a>
+      {/* Right side - Form */}
+      <div className={s.formSide}>
+        <div className={s.formContainer}>
+          <div className={s.mobileLogoWrap}>
+            {[0, 1, 2].map((index) => (
+              <div
+                key={index}
+                className={s.pulseRing}
+                style={{
+                  inset: -(index + 1) * 16,
+                  animationDelay: `${index * 0.6}s`,
+                  animationDuration: `${2.2 + index * 0.8}s`,
+                }}
+              />
+            ))}
+
+            {/* The Logo */}
+            <img
+              src="/icon-192.svg"
+              alt="Logo"
+              width={72}
+              height={72}
+              className={s.logoIcon}
+            />
+          </div>
+
+          <div className={s.mobileTagline}>
+            <span className={s.mobileWordmark}>Cipher</span>
+            <span className={s.mobileSubtext}>Secure & private</span>
+          </div>
+
+          <div className={s.card}>
+            {screen === 'mfa' && (
+              <div className={s.mfaPanel}>
+                <button className={s.backBtn} onClick={() => setScreen('landing')}>
+                  <SkipBack /> Back
+                </button>
+                <p className={s.mfaTitle}>Two-factor verification</p>
+                <p className={s.mfaSubtitle}>Choose how you want to verify your identity</p>
+
+                <div className={s.mfaOptions}>
+                  <button
+                    className={`${s.mfaOption} ${mfaMethod === 'totp' ? s.mfaOptionActive : ''}`}
+                    onClick={() => setMfaMethod('totp')}
+                  >
+                    <div className={s.mfaOptionIcon}><Phone /></div>
+                    Authenticator app
+                  </button>
+                  <button
+                    className={`${s.mfaOption} ${mfaMethod === 'email' ? s.mfaOptionActive : ''}`}
+                    onClick={() => {
+                      setMfaMethod('email');
+                      if (otpCooldown === 0) void handleSendEmailOtp();
+                    }}
+                  >
+                    <div className={s.mfaOptionIcon}><Mail /></div>
+                    Email OTP
+                  </button>
+                </div>
+
+                {error && <div className={s.errorBox}>{error}</div>}
+
+                <div className={s.otpRow}>
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(element) => {
+                        otpRefs.current[index] = element;
+                      }}
+                      className={s.otpBox}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(event) => handleOtpChange(index, event.target.value)}
+                      onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                      autoFocus={index === 0}
+                    />
+                  ))}
+                </div>
+
+                {mfaMethod === 'email' && (
+                  <div className={s.otpResend}>
+                    {otpCooldown > 0 ? (
+                      `Resend in ${otpCooldown}s`
+                    ) : (
+                      <button className={s.otpResendBtn} onClick={() => void handleSendEmailOtp()}>
+                        Resend code
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  className={s.btnPrimary}
+                  onClick={() => void handleMfaVerify()}
+                  disabled={isBusy || !canSubmitOtp}
+                >
+                  {isBusy ? <div className={s.spinner} /> : <><Shield /> Verify &amp; sign in</>}
+                </button>
+              </div>
+            )}
+
+            {screen === 'forgot-success' && (
+              <div className={s.successBox}>
+                <div className={s.successIcon}><Check /></div>
+                <p className={s.successTitle}>Check your inbox</p>
+                <p className={s.successSub}>
+                  Password reset link sent to
+                  <br />
+                  <strong style={{ color: '#f1f5f9' }}>{email}</strong>
+                </p>
+                <button
+                  className={s.btnPrimary}
+                  style={{ marginTop: 16 }}
+                  onClick={() => {
+                    setScreen('landing');
+                    setActiveTab('login');
+                  }}
+                >
+                  Back to sign in
+                </button>
+              </div>
+            )}
+
+            {screen === 'forgot' && (
+              <>
+                <button className={s.backBtn} onClick={() => setScreen('landing')}>
+                  <Backpack /> Back
+                </button>
+                <div className={s.cardHeader}>
+                  <h2 className={s.cardTitle}>Reset password</h2>
+                  <p className={s.cardSubtitle}>We'll send a reset link to your email</p>
+                </div>
+                {error && <div className={s.errorBox}>{error}</div>}
+                <div className={s.fieldGroup}>
+                  <div className={s.fieldWrap}>
+                    <span className={s.fieldIcon}><Mail /></span>
+                    <input
+                      className={s.field}
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') void handleForgotPassword();
+                      }}
+                    />
+                  </div>
+                </div>
+                <button className={s.btnPrimary} onClick={() => void handleForgotPassword()} disabled={isBusy}>
+                  {isBusy ? <div className={s.spinner} /> : 'Send reset link'}
+                </button>
+              </>
+            )}
+
+            {screen === 'auth' && (
+              <>
+                {otherAccount && status === 'authenticated' && (
+                  <div className={s.securityBanner}>
+                    <span className={s.securityBannerIcon}><LucideMailWarning /></span>
+                    <div className={s.securityBannerText}>
+                      <strong style={{ color: 'rgba(245,158,11,.9)' }}>{otherAccount}</strong> is already signed in on this browser.
+                      <button className={s.securityBannerAction} onClick={logout}>
+                        Sign out existing account first →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className={s.tabs}>
+                  <button
+                    className={`${s.tab} ${activeTab === 'login' ? s.tabActive : ''}`}
+                    onClick={() => {
+                      setActiveTab('login');
+                      clearError();
+                    }}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    className={`${s.tab} ${activeTab === 'register' ? s.tabActive : ''}`}
+                    onClick={() => {
+                      setActiveTab('register');
+                      clearError();
+                    }}
+                  >
+                    Create account
+                  </button>
+                </div>
+
+                <div className={s.cardHeader}>
+                  <h2 className={s.cardTitle}>{isLogin ? 'Welcome back' : 'Cipher'}</h2>
+                  <p className={s.cardSubtitle}>
+                    {isLogin
+                      ? 'Sign in to your encrypted workspace'
+                      : 'Create your end-to-end encrypted account'}
+                  </p>
+                </div>
+
+                {error && <div className={s.errorBox}>{error}</div>}
+
+                <div className={s.fieldGroup}>
+                  {!isLogin && (
+                    <div className={s.fieldWrap}>
+                      <span className={s.fieldIcon}><User /></span>
+                      <input
+                        className={s.field}
+                        type="text"
+                        placeholder="Full name"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className={s.fieldWrap}>
+                    <span className={s.fieldIcon}><Mail /></span>
+                    <input
+                      className={s.field}
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <div className={s.fieldWrap}>
+                      <span className={s.fieldIcon}><LockIcon /></span>
+                      <input
+                        className={s.field}
+                        type={showPw ? 'text' : 'password'}
+                        placeholder="Password"
+                        value={password}
+                        style={{ paddingRight: 42 }}
+                        onChange={(event) => setPassword(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (isLogin && event.key === 'Enter') void handleEmailLogin();
+                        }}
+                      />
+                      <button className={s.fieldSuffix} onClick={() => setShowPw((value) => !value)} tabIndex={-1}>
+                        {showPw ? <EyeOff /> : <Eye />}
+                      </button>
+                    </div>
+
+                    {!isLogin && password && (
+                      <div className={s.strengthWrap}>
+                        {[1, 2, 3, 4].map((index) => (
+                          <div
+                            key={index}
+                            className={`${s.strengthBar} ${index <= pwStrength ? STRENGTH_CLASSES[pwStrength] : ''}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {!isLogin && (
+                    <div className={s.fieldWrap}>
+                      <span className={s.fieldIcon}><LockIcon /></span>
+                      <input
+                        className={`${s.field} ${confirmPw && confirmPw !== password ? s.fieldError : ''}`}
+                        type={showConfirm ? 'text' : 'password'}
+                        placeholder="Confirm password"
+                        value={confirmPw}
+                        style={{ paddingRight: 42 }}
+                        onChange={(event) => setConfirmPw(event.target.value)}
+                      />
+                      <button className={s.fieldSuffix} onClick={() => setShowConfirm((value) => !value)} tabIndex={-1}>
+                        {showConfirm ? <EyeOff /> : <Eye />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isLogin && (
+                  <div className={s.forgotWrap}>
+                    <button
+                      className={s.forgotLink}
+                      onClick={() => {
+                        setScreen('forgot');
+                        clearError();
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  className={s.btnPrimary}
+                  onClick={() => void (isLogin ? handleEmailLogin() : handleRegister())}
+                  disabled={isBusy}
+                >
+                  {isBusy ? <div className={s.spinner} /> : isLogin ? 'Sign in' : 'Create account'}
+                </button>
+
+                <div className={s.divider}>
+                  <div className={s.dividerLine} />
+                  <span className={s.dividerText}>or</span>
+                  <div className={s.dividerLine} />
+                </div>
+
+                <button
+                  className={s.btnGoogle}
+                  onClick={() => void loginWithGoogle()}
+                  disabled={isBusy}
+                >
+                  {isBusy ? <div className={s.spinner} /> : <><GoogleIcon /> Continue with Google</>}
+                </button>
+
+                <div className={s.e2eBadge}>
+                  <Shield />
+                  <span>End-to-end encrypted · Zero knowledge</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  )
-}
-
-/* ─────────────────────────────────────────────
-   LOADING SPINNER
-───────────────────────────────────────────── */
-function LoadingSpinner() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ animation: 'cipher-wordmark .8s linear infinite' }}>
-      <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.2)" strokeWidth="2.5" />
-      <path d="M12 2 A10 10 0 0 1 22 12" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  )
+  );
 }

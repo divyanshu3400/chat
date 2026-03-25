@@ -1,433 +1,509 @@
-'use client'
+﻿'use client';
 
-/* ─── React ─────────────────────────────────────────────────────────── */
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 
-/* ─── Data store ─────────────────────────────────────────────────────── */
-import { useStore } from '@/src/lib/store'
+import { useStore } from '@/src/store/store';
+import { useScreen, useAiUI, usePanels } from '@/src/lib/ui';
+import { loadOrGenKeys } from '@/src/lib/crypto';
+import { usePushNotif } from '@/src/hooks/usePushNotif';
 
-/* ─── UI store slices ────────────────────────────────────────────────── */
-import {
-  useScreen, useSetupDone, useAiUI, usePanels, useCallUI,
-} from '@/src/lib/ui'
+import AuthScreen from '@/src/components/AuthScreen';
+import Sidebar from '@/src/components/Sidebar';
+import ChatHeader from '@/src/components/chat/ChatHeader';
+import ChatArea from '@/src/components/chat/ChatArea';
+import EmptyState from '@/src/components/chat/EmptyState';
 
-/* ─── Firebase ───────────────────────────────────────────────────────── */
-import { resolveCfg, initFirebase } from '@/src/lib/firebase'
-import { loadOrGenKeys } from '@/src/lib/crypto'
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup,
-  onAuthStateChanged, signOut as fbSignOut, updateProfile,
-} from 'firebase/auth'
-import {
-  getDatabase, ref, set, get, update, onValue,
-  serverTimestamp, onDisconnect, off,
-} from 'firebase/database'
-import {
-  getStorage, ref as sref,
-  uploadBytesResumable, getDownloadURL,
-} from 'firebase/storage'
+import SettingsPanel from '@/src/components/overlays/SettingsPanel';
+import ProfilePanel from '@/src/components/overlays/ProfilePanel';
+import { NewChatPanel, NewGroupPanel, BookmarksPanel } from '@/src/components/overlays/Panels';
+import { Lightbox, StoryViewer, Toast } from '@/src/components/overlays/Overlays';
+import FloatingCallWindow from '@/src/components/overlays/FloatingCallWindow';
+import FloatingCallPiP from '@/src/components/overlays/FloatingCallPiP';
+import ActiveCallBar from '@/src/components/overlays/ActiveCallBar';
+import { AIPanel } from './chat/AIPanel';
 
-/* ─── Push notifications ─────────────────────────────────────────────── */
-import { usePushNotif } from '@/src/hooks/usePushNotif'
-
-/* ─── Types ──────────────────────────────────────────────────────────── */
-import type { FirebaseConfig } from '@/src/lib/firebase'
-
-/* ─── Pages / screens ───────────────────────────────────────────────── */
-import SetupScreen from '@/src/components/SetupScreen'
-import AuthScreen from '@/src/components/AuthScreen'
-
-/* ─── Layout ─────────────────────────────────────────────────────────── */
-import StatusBar from '@/src/components/Statusbar'
-import Sidebar from '@/src/components/Sidebar'
-
-/* ─── Chat ───────────────────────────────────────────────────────────── */
-import ChatHeader from '@/src/components/chat/ChatHeader'
-import ChatArea from '@/src/components/chat/ChatArea'
-import EmptyState from '@/src/components/chat/EmptyState'
-
-/* ─── Overlays / panels ──────────────────────────────────────────────── */
-import SettingsPanel from '@/src/components/overlays/SettingsPanel'
-import ProfilePanel from '@/src/components/overlays/ProfilePanel'
-import { NewChatPanel, NewGroupPanel, BookmarksPanel } from '@/src/components/overlays/Panels'
-import { Lightbox, StoryViewer, Toast } from '@/src/components/overlays/Overlays'
-
-/* ─── Call components ────────────────────────────────────────────────── */
-import FloatingCallWindow from '@/src/components/overlays/FloatingCallWindow'
-import FloatingCallPiP from '@/src/components/overlays/FloatingCallPiP'
-import ActiveCallBar from '@/src/components/overlays/ActiveCallBar'
-import { getApp } from 'firebase/app'
-import { AIPanel } from './chat/AIPanel'
-import { Conversation } from '../types'
-
+import { initFirebase, resolveCfg } from '@/src/lib/firebase';
+import { pb, getPbFileUrl, STORAGE_KEYS } from '@/src/lib/pb';
 import {
   useCallingStore,
   useOverlayOpen,
   useMinimized,
   useCallData,
   useCallActions,
-} from '@/src/hooks/useCallingStore'
+} from '@/src/hooks/useCallingStore';
 
-/* ═══════════════════════════════════════════════════════════════════════
-   ROOT COMPONENT
-═══════════════════════════════════════════════════════════════════════ */
+import type { ConversationState } from '@/src/store/store';
+import { createChatService } from '../services/pb-chat.service';
+import { useAuthStore } from '../store/auth.store';
+
 export default function CipherApp() {
+  const chatService = useMemo(() => createChatService(pb), []);
 
-  /* ── Data store ──────────────────────────────────────────────────── */
-  const {
-    me, setMe,
-    setMyKP,
-    activeCid, setActiveCid,
-    setSidebarOpen,
-    setStories,
-    setPresence,
-    setPrefs,
-    showToast,
-    conversations,
-    convsLoading,
-    convsError,
-    refetchConvs,
-  } = useStore()
+  const me = useStore((s) => s.me);
+  const activeCid = useStore((s) => s.activeCid);
+  const conversations = useStore((s) => s.conversations);
+  const convsLoading = useStore((s) => s.convsLoading);
+  const convsError = useStore((s) => s.convsError);
 
-  /* ── Push notifications ──────────────────────────────────────────── */
-  const { initPush } = usePushNotif()
+  const setMe = useCallback((v: Parameters<ReturnType<typeof useStore.getState>['setMe']>[0]) => useStore.getState().setMe(v), []);
+  const setMyKP = useCallback((v: Parameters<ReturnType<typeof useStore.getState>['setMyKP']>[0]) => useStore.getState().setMyKP(v), []);
+  const setActiveCid = useCallback((v: Parameters<ReturnType<typeof useStore.getState>['setActiveCid']>[0]) => useStore.getState().setActiveCid(v), []);
+  const setStories = useCallback((v: Parameters<ReturnType<typeof useStore.getState>['setStories']>[0]) => useStore.getState().setStories(v), []);
+  const setPresence = useCallback((id: string, v: any) => useStore.getState().setPresence(id, v), []);
+  const setPrefs = useCallback((v: Parameters<ReturnType<typeof useStore.getState>['setPrefs']>[0]) => useStore.getState().setPrefs(v), []);
+  const showToast = useCallback((msg: string) => useStore.getState().showToast(msg), []);
+  const setSidebarOpen = useCallback((v: boolean) => useStore.getState().setSidebarOpen(v), []);
+  const refetchConvs = useCallback(() => useStore.getState().refetchConvs(), []);
 
-  /* ── UI store slices ─────────────────────────────────────────────── */
-  const { screen, setScreen } = useScreen()
-  const { setupDone, markSetupDone } = useSetupDone()
-  const {
-    aiPanelOpen, globalAiActive,
-    toggleAiPanel, setAiPanelOpen, toggleGlobalAi, setSmartReply,
-  } = useAiUI()
-  const { panels, openPanel, closePanel, closeAllPanels } = usePanels()
-  const overlayOpen = useOverlayOpen()
-  const minimized = useMinimized()
-  const callData = useCallData()
-  const { openCall: storeOpenCall } = useCallActions()
+  const { initPush } = usePushNotif();
+  const { screen, setScreen } = useScreen();
+  const { aiPanelOpen, globalAiActive, toggleAiPanel, setAiPanelOpen, setSmartReply } = useAiUI();
+  const { panels, openPanel, closePanel, closeAllPanels } = usePanels();
 
-  /* ── Firebase subscription cleanup refs ─────────────────────────── */
-  const presenceUnsubsRef = useRef<Map<string, () => void>>(new Map())
-  const storiesUnsubRef = useRef<(() => void) | null>(null)
-  const touchX = useRef(0)
+  const overlayOpen = useOverlayOpen();
+  const minimized = useMinimized();
+  const callData = useCallData();
+  const { openCall: storeOpenCall } = useCallActions();
 
-  /* ── Derived ─────────────────────────────────────────────────────── */
-  const activeConv: Conversation | null =
-    activeCid ? (conversations[activeCid] ?? null) : null
+  // â”€â”€â”€ FIX: Stable auth selector using shallow comparison â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // useAuthStore with a single combined selector prevents multiple
+  // subscriptions from firing individually on each auth field change.
+  const authInitialized = useAuthStore((s) => s.initialized);
+  const authStatus = useAuthStore((s) => s.status);
+  const authUser = useAuthStore((s) => s.user);
+  const initializeAuth = useAuthStore((s) => s.initialize);
+  const logoutAuth = useAuthStore((s) => s.logout);
 
-  /* ════════════════════════════════════════════════════════════════════
-     CALL HELPERS
-     Single source of truth for ending/closing calls.
-  ════════════════════════════════════════════════════════════════════ */
+  const bootedRef = useRef(false);
+  const presenceUnsubsRef = useRef<Map<string, () => void>>(new Map());
+  const storiesUnsubRef = useRef<(() => void) | null>(null);
+  const callUnsubsRef = useRef<Array<() => void>>([]);
+  // â”€â”€â”€ FIX: conversations ref stays in sync but is never in a dep array â”€â”€â”€â”€â”€
+  const conversationsRef = useRef(conversations);
+  const touchX = useRef(0);
 
-  /** Open an outgoing call */
-  function openCall(mode: 'audio' | 'video') {
-    if (!activeConv || !me) return
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
+  const activeConv: ConversationState | null =
+    activeCid ? (conversations[activeCid] ?? null) : null;
+
+  useEffect(() => {
+    const cfg = resolveCfg();
+    if (cfg) {
+      initFirebase(cfg);
+    }
+  }, []); // only on mount
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+
+    return () => {
+      presenceUnsubsRef.current.forEach((fn) => fn());
+      presenceUnsubsRef.current.clear();
+      storiesUnsubRef.current?.();
+      storiesUnsubRef.current = null;
+      callUnsubsRef.current.forEach((fn) => fn());
+      callUnsubsRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authInitialized) return;
+
+    if (authStatus === 'authenticated' && authUser) {
+      chatService.services.users.getById(authUser.id).then((user) => {
+        setMe(user);
+      }).catch(() => {
+        setMe({
+          id: authUser.id,
+          name: authUser.name ?? 'User',
+          email: authUser.email ?? '',
+          avatar: authUser.avatar ?? '',
+          collectionId: authUser.collectionId || '_pb_users_auth_',
+          collectionName: 'users',
+          created: authUser.created || new Date().toISOString(),
+          updated: authUser.updated || new Date().toISOString(),
+          username: authUser.username ?? '',
+          password: '',
+          tokenKey: '',
+          emailVisibility: false,
+          verified: true,
+        });
+      });
+      setScreen('app');
+
+      void (async () => {
+        const kp = (await loadOrGenKeys(authUser.id)) as CryptoKeyPair;
+        setMyKP(kp);
+
+        const { Crypto } = await import('@/src/lib/crypto');
+        const pubkey = await Crypto.exportPub(kp.publicKey);
+
+        await chatService.services.pubkeys.getFullList({
+          filter: `userId = "${authUser.id}"`,
+          batch: 1,
+        }).then(async (rows) => {
+          if (rows[0]?.id) {
+            await chatService.services.pubkeys.update(rows[0].id, { userId: authUser.id, pubkey });
+          } else {
+            await chatService.services.pubkeys.create({ userId: authUser.id, pubkey });
+          }
+        }).catch(() => undefined);
+
+        await chatService.setPresence({ userId: authUser.id, online: true }).catch(() => undefined);
+        await chatService.services.users.update(authUser.id, {
+          last_seen: new Date().toISOString(),
+        }).catch(() => undefined);
+      })();
+
+      const beforeUnload = () => { void setOffline(authUser.id); };
+      window.addEventListener('beforeunload', beforeUnload, { once: true });
+
+      watchContactPresence();
+      attachStoriesListener();
+      attachCallListener(authUser.id);
+
+      return () => {
+        window.removeEventListener('beforeunload', beforeUnload);
+      };
+    }
+
+    // Logged out â€” reset everything
+    setMe(null);
+    setScreen('auth');
+    setActiveCid(null);
+    setAiPanelOpen(false);
+    closeAllPanels();
+
+    presenceUnsubsRef.current.forEach((fn) => fn());
+    presenceUnsubsRef.current.clear();
+    storiesUnsubRef.current?.();
+    storiesUnsubRef.current = null;
+    callUnsubsRef.current.forEach((fn) => fn());
+    callUnsubsRef.current = [];
+
+    // â”€â”€â”€ FIX: only 3 deps now instead of 10+ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // authUser.id (not authUser) prevents re-runs when the authUser object
+    // reference changes but the actual user hasn't changed.
+  }, [authInitialized, authStatus, authUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // â”€â”€â”€ Stable helper functions (useCallback so they never change ref) â”€â”€â”€â”€â”€â”€â”€â”€
+
+  const watchContactPresence = useCallback(() => {
+    presenceUnsubsRef.current.get('global')?.();
+
+    chatService
+      .subscribePresence((event) => {
+        if (event.action === 'create' || event.action === 'update') {
+          setPresence(event.record.userId ?? '', event.record);
+        }
+      })
+      .then((unsubscribe) => {
+        presenceUnsubsRef.current.set('global', unsubscribe);
+      })
+      .catch(() => undefined);
+  }, [chatService, setPresence]);
+
+  const attachStoriesListener = useCallback(() => {
+    storiesUnsubRef.current?.();
+    storiesUnsubRef.current = null;
+
+    const since = new Date(Date.now() - 86_400_000).toISOString();
+
+    const reloadStories = () =>
+      chatService.services.stories
+        .list({ page: 1, perPage: 200, filter: `created >= "${since}"`, sort: '-created' })
+        .then((result) => setStories(result.items as any[]))
+        .catch(() => undefined);
+
+    void reloadStories();
+
+    chatService.services.stories
+      .subscribe(() => { void reloadStories(); })
+      .then((unsubscribe) => { storiesUnsubRef.current = unsubscribe; })
+      .catch(() => undefined);
+  }, [chatService, setStories]);
+
+  const attachCallListener = useCallback((uid: string) => {
+    callUnsubsRef.current.forEach((fn) => fn());
+    callUnsubsRef.current = [];
+
+    chatService.services.call_logs
+      .subscribe((event) => {
+        if (event.action !== 'create' && event.action !== 'update') return;
+        const call = event.record;
+
+        const callerUid = call.initiator;
+        const cid = call.conversation;
+        const mode = call.call_type === 'video' ? 'video' : 'audio';
+        const participants = call.participants ?? [];
+
+        if (call.status !== 'ringing') return;
+        if (!participants.includes(uid)) return;
+        if (callerUid === uid) return;
+
+        // â”€â”€â”€ FIX: Read conversations from ref, not from closure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // If we captured `conversations` from the outer scope, it would be
+        // stale after the first render. The ref is always current.
+        const conv = Object.values(conversationsRef.current).find(
+          (item) => item.otherUser?.id === callerUid,
+        );
+        const peerUser = conv?.otherUser;
+
+        const makePbUrl = (user: typeof peerUser) =>
+          user?.avatar
+            ? getPbFileUrl(
+              { id: user.id, collectionId: '_pb_users_auth_', collectionName: 'users' },
+              user.avatar,
+            )
+            : '';
+
+        storeOpenCall({
+          cid: cid ?? call.id,
+          callLogId: call.id,
+          isIncoming: true,
+          mode,
+          peerName: peerUser?.name ?? peerUser?.username ?? peerUser?.email ?? 'Unknown',
+          peerPhoto: makePbUrl(peerUser),
+          callerName: peerUser?.name ?? peerUser?.username ?? peerUser?.email ?? 'Unknown',
+          callerPhoto: makePbUrl(peerUser),
+          callerUid: callerUid ?? '',
+          calleeUid: uid,
+          state: 'Incomingâ€¦',
+        });
+      })
+      .then((unsubscribe) => { callUnsubsRef.current.push(unsubscribe); })
+      .catch(() => undefined);
+  }, [chatService, storeOpenCall]);
+
+  const setOffline = useCallback(async (uid: string) => {
+    try {
+      await chatService.setPresence({
+        userId: uid,
+        online: false,
+        lastSeen: new Date().toISOString(),
+      });
+    } catch {
+      // no-op
+    }
+  }, [chatService]);
+
+  const openCall = useCallback((mode: 'audio' | 'video') => {
+    // â”€â”€â”€ FIX: Read me/activeCid from store directly to avoid stale closure â”€â”€
+    const { me: currentMe, activeCid: currentCid, conversations: currentConvs } = useStore.getState();
+    if (!currentCid || !currentMe) return;
+    const conv = currentConvs[currentCid];
+    const peerUser = conv?.otherUser;
+
     storeOpenCall({
-      cid: activeCid ?? '',
+      cid: currentCid,
       isIncoming: false,
       mode,
-      peerName: activeConv.otherName ?? 'Unknown',
-      peerPhoto: activeConv.otherPhoto ?? '',
-      callerUid: me.uid,
-      calleeUid: activeConv.otherUid ?? '',
-      state: 'Ringing…',
-    })
-  }
+      peerName: peerUser?.name ?? peerUser?.username ?? peerUser?.email ?? 'Unknown',
+      peerPhoto: peerUser?.avatar
+        ? getPbFileUrl({ id: peerUser.id, collectionId: '_pb_users_auth_', collectionName: 'users' }, peerUser.avatar)
+        : '',
+      callerUid: currentMe.id,
+      calleeUid: peerUser?.id ?? '',
+      state: 'Ringingâ€¦',
+    });
+  }, [storeOpenCall]);
 
-  /* ════════════════════════════════════════════════════════════════════
-     MINIMIZED CALL HANDLERS
-     These use callActionsRef so no extra useWebRTC() is needed here.
-  ════════════════════════════════════════════════════════════════════ */
-  const minimizedCallUI = callData && overlayOpen && minimized
-    ? callData.mode === 'video'
-      ? <FloatingCallPiP />        /* ← no props! */
-      : <ActiveCallBar />          /* ← no props! */
-    : null
-
-  /* ════════════════════════════════════════════════════════════════════
-     MOBILE SWIPE SIDEBAR
-  ════════════════════════════════════════════════════════════════════ */
-  useEffect(() => {
-    const ts = (e: TouchEvent) => { touchX.current = e.touches[0].clientX }
-    const te = (e: TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - touchX.current
-      if (touchX.current < 30 && dx > 60) setSidebarOpen(true)
-      if (dx < -60) setSidebarOpen(false)
+  const signOutUser = useCallback(async () => {
+    const { me: currentMe } = useStore.getState();
+    if (currentMe?.id) {
+      await setOffline(currentMe.id);
     }
-    document.addEventListener('touchstart', ts, { passive: true })
-    document.addEventListener('touchend', te, { passive: true })
+    logoutAuth();
+  }, [setOffline, logoutAuth]);
+
+  const doNewChat = useCallback(async (email: string) => {
+    const { me: currentMe } = useStore.getState();
+    if (!currentMe || !email.trim()) return;
+    if (email.toLowerCase() === currentMe.email.toLowerCase()) {
+      showToast("That's your own email!");
+      return;
+    }
+
+    try {
+      const result = await chatService.services.users
+        .getFullList({ filter: `email = "${email.trim().toLowerCase()}"`, batch: 1 })
+        .then((rows) => rows[0] ?? null);
+
+      if (!result) {
+        showToast('User not found â€” they must sign in first');
+        return;
+      }
+
+      const bundle = await chatService.createDirectConversation({
+        currentUserId: currentMe.id,
+        otherUserId: result.id,
+        createdBy: currentMe.id,
+        name: result.name ?? 'Direct chat',
+      });
+
+      setActiveCid(bundle.conversation.id);
+      closePanel('newChat');
+      showToast('Chat started!');
+    } catch (error: any) {
+      console.log(error)
+      showToast(error?.message ?? 'Failed to start chat');
+    }
+  }, [chatService, closePanel, setActiveCid, showToast]);
+
+  const doNewGroup = useCallback(async (name: string, emails: string[]) => {
+    const { me: currentMe } = useStore.getState();
+    if (!currentMe || !name.trim() || emails.length < 1) return;
+
+    try {
+      const memberIds = [currentMe.id];
+
+      for (const email of emails) {
+        const found = await chatService.services.users
+          .getFullList({ filter: `email = "${email.toLowerCase()}"`, batch: 1 })
+          .then((rows) => rows[0] ?? null);
+        if (found) memberIds.push(found.id);
+      }
+
+      const bundle = await chatService.createGroupConversation({
+        createdBy: currentMe.id,
+        name: name.trim(),
+        memberIds,
+      });
+
+      setActiveCid(bundle.conversation.id);
+      closePanel('newGroup');
+      showToast(`Group "${name}" created!`);
+    } catch (error: any) {
+      showToast(error?.message ?? 'Failed to create group');
+    }
+  }, [chatService, closePanel, setActiveCid, showToast]);
+
+  // â”€â”€â”€ Touch gesture handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    const onTouchStart = (event: TouchEvent) => {
+      touchX.current = event.touches[0].clientX;
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      const dx = event.changedTouches[0].clientX - touchX.current;
+      if (touchX.current < 30 && dx > 60) setSidebarOpen(true);
+      if (dx < -60) setSidebarOpen(false);
+    };
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true });
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+
     return () => {
-      document.removeEventListener('touchstart', ts)
-      document.removeEventListener('touchend', te)
+      document.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [setSidebarOpen]);
+
+  // â”€â”€â”€ Load prefs from localStorage once on mount â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    try {
+      setPrefs(JSON.parse(localStorage.getItem(STORAGE_KEYS.PREFS) ?? '{}'));
+    } catch {
+      // no-op
     }
-  }, [setSidebarOpen])
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Preferences ─────────────────────────────────────────────────── */
+  // â”€â”€â”€ Push notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
-    try { setPrefs(JSON.parse(localStorage.getItem('cipher_prefs') ?? '{}')) }
-    catch { }
-  }, [setPrefs])
-
-  /* ── Push notifications init ─────────────────────────────────────── */
-  useEffect(() => {
-    if (me?.uid) initPush(me.uid)
-  }, [me?.uid, initPush])
-
-  /* ── Firebase boot ───────────────────────────────────────────────── */
-  useEffect(() => {
-    const cfg = resolveCfg()
-    if (!cfg) { setScreen('setup'); return }
-    bootApp(cfg)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setupDone])
-
-  /* ── Incoming call listener (unchanged logic, uses storeOpenCall) ── */
-  useEffect(() => {
-    if (!me) return
-    const db = getDatabase(getApp())
-    const convKeys = Object.keys(conversations)
-    const unsubs: Array<() => void> = []
-
-    convKeys.forEach(cid => {
-      const statusRef = ref(db, `calls/${cid}/status`)
-      const unsub = onValue(statusRef, async snap => {
-        if (snap.val() !== 'ringing') return
-        const callSnap = await get(ref(db, `calls/${cid}`))
-        const callDoc = callSnap.val()
-        if (!callDoc) return
-        if (callDoc.calleeUid !== me.uid) return
-        if (callDoc.callerUid === me.uid) return
-
-        const conv = conversations[cid]
-        if (!conv) return
-
-        /* Open the call overlay via store */
-        storeOpenCall({
-          cid,
-          isIncoming: true,
-          mode: callDoc.mode ?? 'audio',
-          peerName: conv.otherName ?? 'Unknown',
-          peerPhoto: conv.otherPhoto ?? '',
-          callerName: conv.otherName ?? 'Unknown',
-          callerPhoto: conv.otherPhoto ?? '',
-          callerUid: callDoc.callerUid,
-          calleeUid: callDoc.calleeUid,
-          state: 'Incoming…',
-        })
-      })
-      unsubs.push(() => off(statusRef, 'value', unsub as any))
-    })
-
-    return () => unsubs.forEach(fn => fn())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.uid, Object.keys(conversations).join(',')])
-
-  /* ── SW messages ── */
-  useEffect(() => {
-    function onSWMessage(event: MessageEvent) {
-      const { type, cid: swCid } = event.data ?? {}
-      /* ACCEPT_CALL: overlay is already open from FCM notification handler */
-      if (type === 'DECLINE_CALL' && swCid) {
-        set(ref(getDatabase(getApp()), `calls/${swCid}/status`), 'ended').catch(() => { })
-        useCallingStore.getState().endCall()
-      }
+    if (me?.id) {
+      initPush(me.id);
     }
-    navigator.serviceWorker?.addEventListener('message', onSWMessage)
-    return () => navigator.serviceWorker?.removeEventListener('message', onSWMessage)
-  }, [])
+  }, [initPush, me?.id]);
 
-  /* ════════════════════════════════════════════════════════════════════
-     FIREBASE BOOT
-  ════════════════════════════════════════════════════════════════════ */
-  async function bootApp(cfg: FirebaseConfig) {
-    const app = initFirebase(cfg)
-    const auth = getAuth(app)
-    const db = getDatabase(app)
+  // â”€â”€â”€ Service worker message handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  useEffect(() => {
+    async function onSWMessage(event: MessageEvent) {
+      const { type, cid } = event.data ?? {};
+      if (type !== 'DECLINE_CALL' || !cid) return;
 
-    onAuthStateChanged(auth, async user => {
-      if (user) {
-        setMe({ uid: user.uid, displayName: user.displayName ?? 'User', email: user.email ?? '', photoURL: user.photoURL ?? '' })
-        setScreen('app')
+      try {
+        const call = await chatService.services.call_logs
+          .getFullList({ filter: `conversation = "${cid}"`, batch: 1 })
+          .then((rows) => rows[0] ?? null);
 
-        const kp = await loadOrGenKeys(user.uid) as CryptoKeyPair
-        setMyKP(kp)
-        const { Crypto } = await import('@/src/lib/crypto')
-        set(ref(db, `pubkeys/${user.uid}`), { pubkey: await Crypto.exportPub(kp.publicKey), uid: user.uid })
-
-        set(ref(db, `users/${user.uid}`), {
-          uid: user.uid, displayName: user.displayName ?? 'User',
-          email: user.email, photoURL: user.photoURL ?? '', lastSeen: serverTimestamp(),
-        })
-
-        const pr = ref(db, `presence/${user.uid}`)
-        set(pr, { online: true, lastSeen: serverTimestamp() })
-        onDisconnect(pr).set({ online: false, lastSeen: serverTimestamp() })
-
-        watchContactPresence(user.uid, db)
-        attachStoriesListener(db)
-      } else {
-        setMe(null)
-        setScreen('auth')
-        setActiveCid(null)
-        setAiPanelOpen(false)
-        closeAllPanels()
-        presenceUnsubsRef.current.forEach(unsub => unsub())
-        presenceUnsubsRef.current.clear()
-        storiesUnsubRef.current?.()
-        storiesUnsubRef.current = null
+        if (call) {
+          await chatService.services.call_logs.update(call.id, { status: 'ended' });
+        }
+      } catch {
+        // no-op
       }
-    })
-  }
 
-  function watchContactPresence(uid: string, db: ReturnType<typeof getDatabase>) {
-    onValue(ref(db, `conversations/${uid}`), snap => {
-      const convs = (snap.val() ?? {}) as Record<string, Conversation>
-      Object.values(convs).forEach(c => {
-        if (!c.otherUid || presenceUnsubsRef.current.has(c.otherUid)) return
-        const pRef = ref(db, `presence/${c.otherUid}`)
-        onValue(pRef, ps => setPresence(c.otherUid!, ps.val() ?? { online: false }))
-        presenceUnsubsRef.current.set(c.otherUid, () => off(pRef))
-      })
-    })
-  }
-
-  function attachStoriesListener(db: ReturnType<typeof getDatabase>) {
-    storiesUnsubRef.current?.()
-    const sRef = ref(db, 'stories')
-    onValue(sRef, snap => {
-      const now = Date.now()
-      setStories(Object.values(snap.val() ?? {}).filter((s: any) => now - s.ts < 86_400_000) as any[])
-    })
-    storiesUnsubRef.current = () => off(sRef)
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     AUTH / PROFILE / CHAT ACTIONS  (unchanged from before)
-  ════════════════════════════════════════════════════════════════════ */
-  async function signIn() {
-    const cfg = resolveCfg(); if (!cfg) return
-    try { await signInWithPopup(getAuth(initFirebase(cfg)), new GoogleAuthProvider()) }
-    catch (e: any) { showToast('Sign-in failed: ' + e.message) }
-  }
-
-  async function signOutUser() {
-    const cfg = resolveCfg(); if (!cfg) return
-    await fbSignOut(getAuth(initFirebase(cfg)))
-  }
-
-  async function saveProfile(name: string, status: string) {
-    if (!me) return
-    const app = initFirebase(resolveCfg()!)
-    await updateProfile(getAuth(app).currentUser!, { displayName: name })
-    setMe({ ...me, displayName: name, status } as typeof me)
-    update(ref(getDatabase(app), `users/${me.uid}`), { displayName: name, status })
-    showToast('Profile saved ✓')
-  }
-
-  async function uploadAvatar(file: File) {
-    if (!me) return
-    const app = initFirebase(resolveCfg()!)
-    const stor = getStorage(app)
-    showToast('Uploading photo…')
-    const task = uploadBytesResumable(sref(stor, `avatars/${me.uid}`), file)
-    task.on('state_changed', null,
-      () => showToast('Upload failed'),
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref)
-        await updateProfile(getAuth(app).currentUser!, { photoURL: url })
-        await update(ref(getDatabase(app), `users/${me.uid}`), { photoURL: url })
-        setMe({ ...me, photoURL: url })
-        showToast('Photo updated ✓')
-      }
-    )
-  }
-
-  async function doNewChat(email: string) {
-    if (!me || !email.trim()) return
-    const db = getDatabase(initFirebase(resolveCfg()!))
-    if (email.toLowerCase() === me.email.toLowerCase()) { showToast("That's your own email!"); return }
-    const snap = await get(ref(db, 'users'))
-    const found = Object.values(snap.val() ?? {}).find((u: any) => u.email?.toLowerCase() === email.trim().toLowerCase()) as any
-    if (!found) { showToast('User not found — they must sign in first'); return }
-    const cid = [me.uid, found.uid].sort().join('_')
-    const base = { updatedAt: serverTimestamp(), lastMsg: '', isGroup: false }
-    await Promise.all([
-      set(ref(db, `conversations/${me.uid}/${cid}`), { ...base, otherUid: found.uid, otherName: found.displayName, otherPhoto: found.photoURL ?? '' }),
-      set(ref(db, `conversations/${found.uid}/${cid}`), { ...base, otherUid: me.uid, otherName: me.displayName, otherPhoto: me.photoURL ?? '' }),
-    ])
-    setActiveCid(cid)
-    closePanel('newChat')
-    showToast('Chat started!')
-  }
-
-  async function doNewGroup(name: string, emails: string[]) {
-    if (!me || !name.trim() || emails.length < 1) return
-    const db = getDatabase(initFirebase(resolveCfg()!))
-    const snap = await get(ref(db, 'users'))
-    const allUsers = snap.val() ?? {}
-    const members: Record<string, boolean> = { [me.uid]: true }
-    for (const email of emails) {
-      const found = Object.values(allUsers).find((u: any) => u.email?.toLowerCase() === email.toLowerCase()) as any
-      if (found) members[found.uid] = true
+      useCallingStore.getState().endCall();
     }
-    const gid = `grp_${Date.now()}`
-    const base = { updatedAt: serverTimestamp(), lastMsg: '', isGroup: true, name: name.trim() }
-    await Promise.all(Object.keys(members).map(uid => set(ref(db, `conversations/${uid}/${gid}`), base)))
-    setActiveCid(gid)
-    closePanel('newGroup')
-    showToast(`Group "${name}" created!`)
+
+    navigator.serviceWorker?.addEventListener('message', onSWMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onSWMessage);
+  }, [chatService]);
+
+  // â”€â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  if (screen === 'auth' || authStatus === 'anonymous') {
+    return <AuthScreen />;
   }
 
-  if (screen === 'setup') return <SetupScreen onComplete={() => { markSetupDone(); setScreen('auth') }} />
-  if (screen === 'auth') return <AuthScreen onSignIn={signIn} />
+  const minimizedCallUI =
+    callData && overlayOpen && minimized
+      ? callData.mode === 'video'
+        ? <FloatingCallPiP />
+        : <ActiveCallBar />
+      : null;
 
-  /* ════════════════════════════════════════════════════════════════════
-     MAIN APP
-  ════════════════════════════════════════════════════════════════════ */
   return (
     <>
-      {/* ── Status bar ── */}
-      <StatusBar aiActive={globalAiActive} onToggleAI={toggleGlobalAi} />
-
-      {/* ── Minimized call (renders above everything else) ── */}
       {minimizedCallUI}
 
-      {/* ── App shell ── */}
-      <div style={{
-        display: 'flex',
-        height: '100dvh',
-        paddingTop: 36,
-        background: 'var(--bg)',
-        overflow: 'hidden',
-      }}>
-
+      <div
+        style={{
+          display: 'flex',
+          height: '100dvh',
+          background: 'var(--bg)',
+          overflow: 'hidden',
+        }}
+      >
         <Sidebar
           onNewChat={() => openPanel('newChat')}
           onNewGroup={() => openPanel('newGroup')}
           onProfile={() => openPanel('profile')}
           onSettings={() => openPanel('settings')}
-          onOpenChat={cid => {
-            setActiveCid(cid)
-            setSidebarOpen(false)
-            if (globalAiActive) setAiPanelOpen(true)
+          onOpenChat={(cid) => {
+            setActiveCid(cid);
+            setSidebarOpen(false);
+            if (globalAiActive) setAiPanelOpen(true);
           }}
         />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            position: 'relative',
+            minWidth: 0,
+          }}
+        >
           {activeCid && activeConv ? (
             <>
               <ChatHeader
                 conv={activeConv}
                 onBack={() => setActiveCid(null)}
-                onSearch={() => { }}
+                onSearch={() => undefined}
                 onStartCall={openCall}
                 onToggleAI={toggleAiPanel}
               />
-              <ChatArea
-                key={activeCid}
-                cid={activeCid}
-                conv={activeConv}
-              />
+              <ChatArea key={activeCid} cid={activeCid} conv={activeConv} />
             </>
           ) : (
             <EmptyState
@@ -450,9 +526,8 @@ export default function CipherApp() {
         )}
       </div>
 
-      {/* ── Panels ── */}
       <SettingsPanel open={panels.settings} onClose={() => closePanel('settings')} onSignOut={signOutUser} />
-      <ProfilePanel open={panels.profile} onClose={() => closePanel('profile')} onSave={saveProfile} onAvatarChange={uploadAvatar} />
+      <ProfilePanel open={panels.profile} onClose={() => closePanel('profile')} />
       <NewChatPanel open={panels.newChat} onClose={() => closePanel('newChat')} onStart={doNewChat} />
       <NewGroupPanel open={panels.newGroup} onClose={() => closePanel('newGroup')} onCreate={doNewGroup} />
       <BookmarksPanel open={panels.bookmarks} onClose={() => closePanel('bookmarks')} bookmarks={[]} />
@@ -462,5 +537,6 @@ export default function CipherApp() {
       <StoryViewer />
       <Toast />
     </>
-  )
+  );
 }
+

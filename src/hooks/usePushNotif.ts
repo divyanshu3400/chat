@@ -1,38 +1,14 @@
-/**
- * hooks/usePushNotif.ts
- *
- * Handles:
- *  1. Requesting notification permission
- *  2. Getting the FCM token and saving it to Firebase DB
- *  3. Handling foreground messages (when app is open)
- *  4. Routing incoming call notifications to the call overlay
- *
- * Usage in CipherApp.tsx:
- *   const { initPush } = usePushNotif()
- *   useEffect(() => { if (me) initPush(me.uid) }, [me])
- */
-
 import { useCallback } from 'react'
-import { getMessaging, getToken, onMessage } from 'firebase/messaging'
-import { getApp } from 'firebase/app'
-import { getDatabase, ref, set } from 'firebase/database'
-import { useStore } from '@/src/lib/store'
-import { useCipherUIStore } from '@/src/lib/ui'
-import { CallData } from '@/src/types'
-import { useOverlayOpen } from './useCallingStore'
+import { useStore } from '@/src/store/store'
+import { useCallingStore } from './useCallingStore'
+import { pb, COLLECTIONS } from '@/src/lib/pb'
 
-/* ── Your VAPID public key from Firebase Console ──────────────────────
-   Firebase Console → Project Settings → Cloud Messaging → Web Push certs
-   Generate a key pair → copy the public key here                       */
 const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_KEY ?? ''
+const PB_URL = process.env.NEXT_PUBLIC_PB_URL ?? 'https://com.example.com/db'
 
-/* ═══════════════════════════════════════════════════════════════════════
-   HOOK
-═══════════════════════════════════════════════════════════════════════ */
 export function usePushNotif() {
     const { showToast } = useStore()
 
-    /* ── Register service worker + get FCM token ─────────────────────── */
     const initPush = useCallback(async (uid: string) => {
         /* 1. Check support */
         if (!('Notification' in window) || !('serviceWorker' in navigator)) {
@@ -47,66 +23,71 @@ export function usePushNotif() {
             return
         }
 
-        /* 3. Register service worker */
+        /* 3. Register service worker
+              Use your own SW instead of firebase-messaging-sw.js */
         let swReg: ServiceWorkerRegistration
         try {
-            swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            swReg = await navigator.serviceWorker.register('/sw.js')
         } catch (err) {
             console.error('[Push] SW registration failed:', err)
             return
         }
 
-        /* 4. Get FCM token */
+        /* 4. Subscribe to Web Push using VAPID */
         try {
-            const messaging = getMessaging(getApp())
-            const token = await getToken(messaging, {
-                vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: swReg,
-            })
+            let subscription = await swReg.pushManager.getSubscription()
 
-            if (!token) {
-                console.warn('[Push] No token received')
-                return
+            if (!subscription) {
+                subscription = await swReg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_KEY) as unknown as BufferSource,
+                })
             }
 
-            /* 5. Save token to Firebase DB so Cloud Function can target this device */
-            const db = getDatabase(getApp())
-            await set(ref(db, `fcmTokens/${uid}`), {
-                token,
-                updatedAt: Date.now(),
+            /* 5. Save subscription to PocketBase push_tokens collection */
+            const subJson = subscription.toJSON()
+            const tokenPayload = {
+                userId: uid,
+                endpoint: subJson.endpoint,
+                p256dh: (subJson.keys as any)?.p256dh ?? '',
+                auth: (subJson.keys as any)?.auth ?? '',
                 platform: 'web',
-            })
+                updatedAt: new Date().toISOString(),
+            }
 
-            console.log('[Push] Token registered:', token.slice(0, 20) + '…')
+            /* Upsert — update if exists, create if not */
+            const existing = await pb
+                .collection(COLLECTIONS.PUSH_TOKENS)
+                .getFirstListItem(`userId="${uid}"`)
+                .catch(() => null)
 
-            /* 6. Handle FOREGROUND messages (app is open + focused) */
-            onMessage(messaging, payload => {
-                const data = payload.data as Record<string, string> | undefined
+            if (existing) {
+                await pb.collection(COLLECTIONS.PUSH_TOKENS).update(existing.id, tokenPayload)
+            } else {
+                await pb.collection(COLLECTIONS.PUSH_TOKENS).create(tokenPayload)
+            }
+
+            console.log('[Push] Subscription registered for uid:', uid)
+
+            /* 6. Handle FOREGROUND messages via SW message event
+                  Your SW should postMessage to the page for foreground push events */
+            navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+                const data = event.data as Record<string, string> | undefined
                 if (!data) return
 
                 if (data.type === 'incoming_call') {
-                    /* App is open — show in-app call overlay directly */
-                    const cid = data.cid
-                    const callerName = data.callerName ?? 'Unknown'
-                    const callerPhoto = data.callerPhoto ?? ''
-                    const mode = (data.mode ?? 'audio') as 'audio' | 'video'
-                    const callerUid = data.callerUid ?? ''
-                    const calleeUid = data.calleeUid ?? ''
-
-                    const callData: CallData = {
-                        peerName: callerName,
-                        peerPhoto: callerPhoto,
-                        callerName,
-                        callerPhoto,
-                        state: 'Incoming…',
+                    useCallingStore.getState().openCall({
+                        cid: data.cid ?? '',
                         isIncoming: true,
-                        mode,
-                        cid,
-                        callerUid,
-                        calleeUid,
-                    }
-
-                    useCipherUIStore.getState().setCallData(callData)
+                        mode: (data.mode ?? 'audio') as 'audio' | 'video',
+                        peerName: data.callerName ?? 'Unknown',
+                        peerPhoto: data.callerPhoto ?? '',
+                        callerName: data.callerName ?? 'Unknown',
+                        callerPhoto: data.callerPhoto ?? '',
+                        callerUid: data.callerUid ?? '',
+                        calleeUid: data.calleeUid ?? '',
+                        state: 'Incoming…',
+                    })
                 }
 
                 if (data.type === 'missed_call') {
@@ -115,9 +96,20 @@ export function usePushNotif() {
             })
 
         } catch (err) {
-            console.error('[Push] getToken failed:', err)
+            console.error('[Push] Push subscription failed:', err)
         }
     }, [showToast])
 
     return { initPush }
+}
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+    for (let i = 0; i < rawData.length; i++) {
+        outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
 }
