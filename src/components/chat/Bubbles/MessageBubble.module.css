@@ -1,50 +1,27 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   MessageBubble.module.css
-   All message-specific tokens live here.
-   Global tokens consumed: --ac, --tx, --tx2, --tx3, --s2, --s3,
-   --bd, --bd2, --mono, --ac-glow, --transition
-   Everything else is defined locally inside .row (scoped to this module).
-═══════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────────────
-   LOCAL DESIGN TOKENS  (message-scoped, override freely)
-───────────────────────────────────────────────────────────────────── */
-.row {
-    /* ── Mine bubble ── */
+﻿.row {
     --mb-mine-bg: var(--bubble-mine-bg, #2563eb);
     --mb-mine-bg-active: var(--bubble-mine-bg-active, #1d4ed8);
     --mb-mine-tx: var(--bubble-mine-tx, #ffffff);
     --mb-mine-tx2: rgba(255, 255, 255, 0.62);
-    /* time / edited */
     --mb-mine-shadow: var(--ac-glow, rgba(37, 99, 235, .35));
-
-    /* ── Theirs bubble ── */
     --mb-theirs-bg: var(--bubble-theirs-bg, #1e2535);
     --mb-theirs-bg-active: var(--bubble-theirs-bg-active, #252d42);
     --mb-theirs-tx: var(--bubble-theirs-tx, #e2e6f0);
     --mb-theirs-tx2: rgba(226, 230, 240, 0.55);
     --mb-theirs-border: var(--border-subtle, rgba(255, 255, 255, 0.06));
-
-    /* ── Reply quote ── */
     --mb-rq-mine-bg: var(--reply-mine-bg, rgba(255, 255, 255, 0.14));
     --mb-rq-mine-bar: var(--reply-mine-border, rgba(255, 255, 255, 0.75));
     --mb-rq-mine-sender: var(--reply-mine-tx, rgba(255, 255, 255, 0.92));
     --mb-rq-theirs-bg: var(--ac-dim, rgba(79, 126, 248, 0.12));
     --mb-rq-theirs-bar: var(--ac, #4f7ef8);
     --mb-rq-theirs-sender: var(--ac, #4f7ef8);
-
-    /* ── Ticks ── */
     --mb-tick-sent: var(--tick-sent, rgba(255, 255, 255, 0.45));
     --mb-tick-delivered: var(--tick-delivered, rgba(255, 255, 255, 0.82));
     --mb-tick-read: var(--tick-read, #7dd3fc);
-
-    /* ── Media ── */
     --mb-media-badge-bg: var(--media-badge-bg, rgba(0, 0, 0, 0.52));
     --mb-media-overlay: var(--media-overlay, rgba(0, 0, 0, 0.36));
     --mb-play-bg: var(--play-btn-bg, rgba(255, 255, 255, 0.93));
     --mb-play-tx: var(--play-btn-tx, #0f172a);
-
-    /* ── File ── */
     --mb-file-icon-mine: var(--file-icon-mine, rgba(255, 255, 255, 0.16));
     --mb-file-icon-theirs: var(--ac-dim, rgba(79, 126, 248, 0.15));
     --mb-file-icon-tx-theirs: var(--ac, #4f7ef8);
@@ -52,40 +29,24 @@
     --mb-dl-mine-bg-hover: var(--progress-mine, rgba(255, 255, 255, 0.26));
     --mb-dl-theirs-bg: var(--ac-dim, rgba(79, 126, 248, 0.13));
     --mb-dl-theirs-bg-hover: var(--ac-glow, rgba(79, 126, 248, 0.24));
-
-    /* ── Read more ── */
     --mb-readmore-mine: var(--reply-mine-tx, rgba(255, 255, 255, 0.68));
     --mb-readmore-theirs: var(--ac, #4f7ef8);
     --mb-collapse-lines: 5;
-    /* lines shown when collapsed */
-
-    /* ── Picker ── */
     --mb-picker-bg: var(--s2, #141b2d);
 
-    /* ── System pill ── */
     --mb-sys-bg: var(--glass, rgba(255, 255, 255, 0.06));
     --mb-sys-tx: var(--tx-muted, rgba(255, 255, 255, 0.4));
-
-    /* ── Geometry ── */
     --mb-r: 20px;
-    /* main bubble radius */
     --mb-r-tail: 5px;
-    /* tail corner radius */
     --mb-r-media: 14px;
-    /* media clip radius */
     --mb-max-w: 78%;
-    /* mobile bubble max-width */
     --mb-avatar: 30px;
 
-    /* ── Layout ── */
     display: flex;
     flex-direction: column;
     transition: transform 0.22s cubic-bezier(.4, 0, .2, 1);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   RESPONSIVE  max-width escalation
-───────────────────────────────────────────────────────────────────── */
 @media (min-width: 480px) {
     .row {
         --mb-max-w: 74%;
@@ -110,9 +71,6 @@
     }
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   ROW ALIGNMENT
-───────────────────────────────────────────────────────────────────── */
 .rowMine {
     align-items: flex-end;
 }
@@ -121,9 +79,6 @@
     align-items: flex-start;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   DELETED STATE
-───────────────────────────────────────────────────────────────────── */
 .deletedBubble {
     display: inline-flex;
     align-items: center;
@@ -144,9 +99,6 @@
     color: var(--mb-theirs-tx);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   SYSTEM MESSAGE
-───────────────────────────────────────────────────────────────────── */
 .systemRow {
     padding: 6px 16px;
     text-align: center;
@@ -164,9 +116,6 @@
     padding: 3px 13px;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   SENDER NAME  (group chats)
-───────────────────────────────────────────────────────────────────── */
 .senderName {
     font-size: 11px;
     font-weight: 700;
@@ -178,9 +127,6 @@
     /* align under bubble, past avatar */
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   AVATAR
-───────────────────────────────────────────────────────────────────── */
 .avatarWrap {
     width: var(--mb-avatar);
     flex-shrink: 0;
@@ -213,9 +159,6 @@
     height: var(--mb-avatar);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   BUBBLE OUTER  (avatar + column side by side)
-───────────────────────────────────────────────────────────────────── */
 .bubbleOuter {
     display: flex;
     align-items: flex-end;
@@ -231,9 +174,6 @@
     flex-direction: row;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   BUBBLE COLUMN  (reply quote + bubble + reactions stacked)
-───────────────────────────────────────────────────────────────────── */
 .bubbleCol {
     display: flex;
     flex-direction: column;
@@ -248,9 +188,6 @@
     align-items: flex-start;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   REPLY QUOTE
-───────────────────────────────────────────────────────────────────── */
 .replyQuote {
     position: relative;
     z-index: 1;
@@ -304,9 +241,6 @@
     color: var(--mb-theirs-tx2, rgba(255, 255, 255, .6));
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   MAIN BUBBLE
-───────────────────────────────────────────────────────────────────── */
 .bubble {
     position: relative;
     cursor: default;
@@ -338,7 +272,6 @@
     box-shadow: 0 4px 18px var(--mb-mine-shadow);
 }
 
-/* Theirs — box-shadow border so it doesn't shift layout */
 .bubbleTheirs {
     background: var(--mb-theirs-bg);
     color: var(--mb-theirs-tx);
@@ -347,9 +280,6 @@
         0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   TEXT  +  READ MORE
-───────────────────────────────────────────────────────────────────── */
 .textContent {
     font-size: 15px;
     line-height: 1.58;
@@ -450,9 +380,6 @@
     opacity: 0.8;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   FOOTER  (time + ticks + edited)
-───────────────────────────────────────────────────────────────────── */
 .footer {
     display: flex;
     align-items: center;
@@ -479,9 +406,6 @@
     margin-right: 1px;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   TICKS  (SVG read receipts)
-───────────────────────────────────────────────────────────────────── */
 .tick {
     display: inline-flex;
     align-items: center;
@@ -501,9 +425,6 @@
     color: var(--mb-tick-read);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   MEDIA TIMESTAMP BADGE  (floats over image/video)
-───────────────────────────────────────────────────────────────────── */
 .mediaBadge {
     position: absolute;
     bottom: 7px;
@@ -523,13 +444,10 @@
     font-size: 10.5px;
     font-family: var(--mono, monospace);
     color: #fff;
-    /* always white — sits on dark scrim */
+    /* always white â€” sits on dark scrim */
     line-height: 1;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   IMAGE  /  GIF  media wrap
-───────────────────────────────────────────────────────────────────── */
 .mediaWrap {
     cursor: pointer;
     border-radius: var(--mb-r-media);
@@ -571,9 +489,6 @@
     border-radius: inherit;
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   GIF BADGE
-───────────────────────────────────────────────────────────────────── */
 .gifBadge {
     position: absolute;
     top: 7px;
@@ -589,9 +504,6 @@
     backdrop-filter: blur(4px);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   VIDEO
-───────────────────────────────────────────────────────────────────── */
 .videoWrap {
     cursor: pointer;
     border-radius: var(--mb-r-media);
@@ -652,9 +564,6 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   FILE ATTACHMENT
-───────────────────────────────────────────────────────────────────── */
 .file {
     display: flex;
     align-items: center;
@@ -776,9 +685,6 @@
     background: var(--mb-dl-theirs-bg);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   QUICK REACTION PICKER  (double-tap)
-───────────────────────────────────────────────────────────────────── */
 .pickerWrap {
     position: absolute;
     bottom: calc(100% + 7px);

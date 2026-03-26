@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { memo, useCallback, useRef, useState } from 'react'
 
@@ -10,7 +10,7 @@ import styles from './MessageBubble.module.css'
 import { ReplyQuote, Ticks } from '../ui'
 import { MessageContent } from './MessageContent'
 
-const EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍', '👎', '🎉', '🔥', '🤯'] as const
+const EMOJIS = ['â¤ï¸', 'ðŸ˜‚', 'ðŸ˜®', 'ðŸ˜¢', 'ðŸ˜¡', 'ðŸ‘', 'ðŸ‘Ž', 'ðŸŽ‰', 'ðŸ”¥', 'ðŸ¤¯'] as const
 
 export interface MessageBubbleViewModel {
   uid: string
@@ -90,7 +90,7 @@ function buildReactionUsers(reactions: Record<string, string | null>, emoji: str
 }
 
 function isMediaMessage(msg: MessageBubbleViewModel): boolean {
-  return ['image', 'audio', 'video', 'gif', 'file'].includes(msg.type) || !!msg.hasAttachments
+  return ['image', 'audio', 'video', 'gif', 'file','pdf'].includes(msg.type) || !!msg.hasAttachments
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -200,7 +200,6 @@ export const MessageBubble = memo(function MessageBubble({
             onTouchEnd={handleTouchEnd}
             onDoubleClick={() => setShowPicker((current) => !current)}
           >
-            <div className={styles.bubbleShine} />
 
             <MessageContent
               cid={cid}
@@ -301,3 +300,4 @@ export const MessageBubble = memo(function MessageBubble({
     prev.onShowReactors === next.onShowReactors
   )
 })
+

@@ -1,14 +1,12 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { shallow } from 'zustand/shallow'
-
 import { useStore } from '@/src/store/store'
 import { createChatService } from '@/src/services/pb-chat.service'
 import { pb } from '@/src/lib/pb'
 
 import styles from './Sidebar.module.css'
-import { CloudLightning, GroupIcon, Search, Settings, UserPlus2, X } from 'lucide-react'
+import { CloudLightning, GroupIcon, MoreVertical, PanelLeftClose, PanelLeftOpen, Search, Settings, UserPlus2, X } from 'lucide-react'
 
 import type {
   ConversationMembersRecord,
@@ -16,6 +14,7 @@ import type {
   MessageBundle,
   MessageStateItem,
   PresenceRecord,
+  SbTab,
   UsersRecord,
 } from '@/src/store/store'
 import { useConvCtx } from '@/src/lib/ui'
@@ -28,8 +27,7 @@ import { StoriesRow } from './StoriesRow'
 import { Avatar } from '../shared'
 import { ConvRow } from './ConvRow'
 import { useShallow } from 'zustand/react/shallow'
-
-type Tab = 'all' | 'dms' | 'groups' | 'starred' | 'unread'
+import { getConversationName, getLastMessageText, getUserAvatar } from '@/src/utils/user_utils'
 
 type Props = {
   onNewChat: () => void
@@ -37,6 +35,7 @@ type Props = {
   onProfile: () => void
   onSettings: () => void
   onOpenChat: (cid: string) => void
+  mobileHome?: boolean
 }
 
 type SidebarConversationView = {
@@ -59,98 +58,13 @@ type SidebarConversationView = {
   lastMessage: MessageStateItem['message'] | null
 }
 
-function getUserAvatar(user: UsersRecord | null): string {
-  if (!user?.avatar) {
-    return ''
-  }
-
-  try {
-    return pb.files.getURL(user, user.avatar).toString()
-  } catch {
-    return ''
-  }
-}
-
-function getConversationName(item: {
-  source: ConversationsRecord
-  otherUser: UsersRecord | null
-}): string {
-  if (item.source.type === 'group') {
-    return item.source.name?.trim() || 'Untitled group'
-  }
-
-  return item.otherUser?.name?.trim() || item.otherUser?.username?.trim() || item.otherUser?.email || 'Unknown user'
-}
-
-function getLastMessageText(bundle: MessageBundle['message'] | null): string {
-  if (!bundle) {
-    return ''
-  }
-
-  if (bundle.is_deleted) {
-    return 'Message deleted'
-  }
-
-  if (bundle.content?.trim()) {
-    return bundle.content
-  }
-
-  if ((bundle.attachments?.length ?? 0) > 0) {
-    return 'Attachment'
-  }
-
-  return ''
-}
-
-function buildSidebarConversationView(
-  currentUserId: string | null,
-  id: string,
-  item: {
-    bundle: {
-      conversation: ConversationsRecord
-      members: ConversationMembersRecord[]
-    }
-    otherUser: UsersRecord | null
-    lastMessage: MessageBundle['message'] | null
-  },
-): SidebarConversationView {
-  const member =
-    (currentUserId
-      ? item.bundle.members.find((entry) => entry.user === currentUserId) ?? null
-      : null)
-
-  const updatedAt = Date.parse(item.lastMessage?.created ?? item.bundle.conversation.updated)
-
-  return {
-    id,
-    name: getConversationName({
-      source: item.bundle.conversation,
-      otherUser: item.otherUser,
-    }),
-    subtitle: item.otherUser?.email ?? item.bundle.conversation.description ?? '',
-    photo: item.bundle.conversation.type === 'group' ? '' : getUserAvatar(item.otherUser),
-    isGroup: item.bundle.conversation.type === 'group',
-    otherUid: item.otherUser?.id ?? null,
-    unread: 0,
-    starred: false,
-    pinned: false,
-    muted: !!member?.is_muted,
-    archived: !!item.bundle.conversation.is_archived,
-    updatedAt: Number.isFinite(updatedAt) ? updatedAt : 0,
-    lastMsg: getLastMessageText(item.lastMessage),
-    source: item.bundle.conversation,
-    member,
-    otherUser: item.otherUser,
-    lastMessage: item.lastMessage,
-  }
-}
-
 export default function Sidebar({
   onNewChat,
   onNewGroup,
   onProfile,
   onSettings,
   onOpenChat,
+  mobileHome = false,
 }: Props) {
   const chatService = useMemo(() => createChatService(pb), [])
   const isMobile = isMobileDevice()
@@ -172,6 +86,7 @@ export default function Sidebar({
     refetchConvs,
     updateConversation,
     showToast,
+    prefs,
   } = useStore(
     useShallow((state) => ({
       me: state.me,
@@ -189,19 +104,18 @@ export default function Sidebar({
       refetchConvs: state.refetchConvs,
       updateConversation: state.updateConversation,
       showToast: state.showToast,
+      prefs: state.prefs,
+      setPrefs: state.setPrefs,
     }))
   );
 
-  const [tab, setTabLocal] = useState<Tab>(sbTab)
   const [focusedIdx, setFocusedIdx] = useState(-1)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [compactDesktop, setCompactDesktop] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const swipeX0 = useRef(0)
-
-  useEffect(() => {
-    setTabLocal(sbTab)
-  }, [sbTab])
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     function onKey(event: globalThis.KeyboardEvent) {
@@ -216,8 +130,31 @@ export default function Sidebar({
     return () => window.removeEventListener('keydown', onKey)
   }, [setSidebarOpen])
 
-  function setTab(nextTab: Tab) {
-    setTabLocal(nextTab)
+  useEffect(() => {
+    if (isMobile) {
+      setCompactDesktop(false)
+      return
+    }
+
+    try {
+      setCompactDesktop(window.localStorage.getItem('cipher_sidebar_compact_desktop') === '1')
+    } catch {
+      setCompactDesktop(false)
+    }
+  }, [isMobile])
+
+  useEffect(() => {
+    if (isMobile) return
+
+    try {
+      window.localStorage.setItem('cipher_sidebar_compact_desktop', compactDesktop ? '1' : '0')
+    } catch {
+      // ignore storage failures
+    }
+  }, [compactDesktop, isMobile])
+
+  function setTab(nextTab: SbTab) {
+    setSbTab(nextTab)
     setSbTab(nextTab)
   }
 
@@ -230,19 +167,15 @@ export default function Sidebar({
   const filteredConvs = useMemo(() => {
     let entries = [...views]
 
-    if (tab === 'dms') {
-      entries = entries.filter(([, conv]) => !conv.isGroup)
-    }
-
-    if (tab === 'groups') {
+    if (sbTab === 'groups') {
       entries = entries.filter(([, conv]) => conv.isGroup)
     }
 
-    if (tab === 'starred') {
+    if (sbTab === 'starred') {
       entries = entries.filter(([, conv]) => conv.starred)
     }
 
-    if (tab === 'unread') {
+    if (sbTab === 'unread') {
       entries = entries.filter(([, conv]) => conv.unread > 0)
     }
 
@@ -264,7 +197,7 @@ export default function Sidebar({
 
       return b[1].updatedAt - a[1].updatedAt
     })
-  }, [views, tab, searchQuery])
+  }, [views, sbTab, searchQuery])
 
   const totalUnread = useMemo(
     () => filteredConvs.reduce((count, [, conv]) => count + conv.unread, 0),
@@ -381,11 +314,10 @@ export default function Sidebar({
     }
   }
 
-  const tabs: Array<{ key: Tab; label: string }> = [
+  const tabs: Array<{ key: SbTab; label: string }> = [
     { key: 'all', label: 'All' },
-    { key: 'dms', label: 'DMs' },
     { key: 'groups', label: 'Groups' },
-    { key: 'starred', label: '*' },
+    { key: 'starred', label: '⭐' },
     { key: 'unread', label: 'Unread' },
   ]
 
@@ -432,6 +364,12 @@ export default function Sidebar({
 
   const currentUserName = me?.name?.trim() || me?.username || me?.email || 'User'
   const currentUserPhoto = getUserAvatar(me)
+  const isLightTheme = prefs.theme === 'light'
+
+  function toggleCompactDesktop() {
+    if (isMobile) return
+    setCompactDesktop((current) => !current)
+  }
 
   return (
     <>
@@ -439,7 +377,7 @@ export default function Sidebar({
 
       <aside
         id="cipher-sidebar-wrap"
-        className={`${styles.wrap} ${sidebarOpen ? styles.wrapOpen : ''}`}
+        className={`${styles.wrap} ${sidebarOpen ? styles.wrapOpen : ''} ${!isMobile && compactDesktop ? styles.compactDesktop : ''}`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -453,7 +391,7 @@ export default function Sidebar({
                 <Avatar
                   name={currentUserName}
                   photo={currentUserPhoto}
-                  size={38}
+                  size={28}
                   ring
                 />
                 <div className={styles.profileOnlineDot} />
@@ -464,17 +402,41 @@ export default function Sidebar({
                 {me?.email && <div className={styles.profileEmail}>{me.email}</div>}
               </div>
             </button>
-
             <div className={styles.headerActions}>
-              <button className={styles.headerBtn} onClick={onNewChat} title="New chat">
-                <UserPlus2 />
+              {/* The Trigger Button */}
+              <button
+                className={styles.headerBtn}
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <MoreVertical size={18} />
               </button>
-              <button className={styles.headerBtn} onClick={onNewGroup} title="New group">
-                <GroupIcon />
-              </button>
-              <button className={styles.headerBtn} onClick={onSettings} title="Settings">
-                <Settings />
-              </button>
+
+              {/* The Dropdown Menu */}
+              {menuOpen && (
+                <div className={styles.optionsDropdown}>
+                  {!isMobile && (
+                    <button className={styles.dropdownItem} onClick={toggleCompactDesktop}>
+                      {compactDesktop ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                      <span>{compactDesktop ? 'Expand' : 'Compact'}</span>
+                    </button>
+                  )}
+
+                  <button className={styles.dropdownItem} onClick={onNewChat}>
+                    <UserPlus2 size={15} />
+                    <span>New Chat</span>
+                  </button>
+
+                  <button className={styles.dropdownItem} onClick={onNewGroup}>
+                    <GroupIcon size={15} />
+                    <span>New Group</span>
+                  </button>
+
+                  <button className={styles.dropdownItem} onClick={onSettings}>
+                    <Settings size={15} />
+                    <span>Settings</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -482,7 +444,7 @@ export default function Sidebar({
             <span className={styles.searchIcon}><Search /></span>
             <input
               ref={searchRef}
-              placeholder="Search... (Ctrl/Cmd+K)"
+              placeholder={isLightTheme ? 'Search cycles...' : 'Search neural network...'}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -504,11 +466,16 @@ export default function Sidebar({
           </div>
         </div>
 
-        <StoriesRow onAddStory={() => undefined} />
+        <div className={styles.featureSection}>
+          <div className={styles.featureHeader}>
+            <span className={styles.featureEyebrow}>{isLightTheme ? 'Neural Interfaces' : 'Active AI Assistants'}</span>
+          </div>
+          <StoriesRow onAddStory={() => undefined} />
+        </div>
 
         <div className={styles.tabBar}>
           {tabs.map((item) => {
-            const isActive = tab === item.key
+            const isActive = sbTab === item.key
             const showBadge = item.key === 'unread' && totalUnread > 0
 
             return (
@@ -526,6 +493,25 @@ export default function Sidebar({
               </button>
             )
           })}
+        </div>
+
+        {mobileHome && (
+          <div className={styles.mobileHero}>
+            <div className={styles.mobileHeroEyebrow}>{isLightTheme ? 'System Intelligence' : 'Neural Command'}</div>
+            <div className={styles.mobileHeroTitle}>{isLightTheme ? 'Memory Synthesis' : 'Signal Uplink'}</div>
+            <div className={styles.mobileHeroBody}>{isLightTheme ? 'Your interface has picked up fresh chat patterns. Jump into a new cycle or reopen a recent thread.' : 'Your encrypted network is online. Launch a direct chat, spin up a group, or continue from a recent thread.'}</div>
+            <div className={styles.mobileHeroActions}>
+              <button className={styles.mobileHeroPrimary} onClick={onNewChat}>New Chat</button>
+              <button className={styles.mobileHeroSecondary} onClick={onNewGroup}>New Group</button>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.listIntro}>
+          <div>
+            <div className={styles.listTitle}>{isLightTheme ? 'Recent Cycles' : 'Recent Threads'}</div>
+          </div>
+          <div className={styles.listMeta}>{filteredConvs.length > 0 ? String(filteredConvs.length) + ' active' : 'No pulses'}</div>
         </div>
 
         <div ref={listRef} className={styles.convList} onKeyDown={onListKeyDown}>
@@ -559,23 +545,25 @@ export default function Sidebar({
         </div>
 
         <div className={styles.footer}>
-          <div className={styles.footerBrand}>
-            <span className={styles.footerBrandIcon}><CloudLightning /></span>
-            Cipher
-          </div>
-          <div className={styles.footerRight}>
-            <span className={styles.footerVersion}>v2.0</span>
-            <div className={styles.footerStatusGroup}>
-              <span className={styles.footerStatusText}>Connected</span>
-              <div className={styles.footerDot} />
+          <div className={styles.footerMeta}>
+            <div className={styles.footerBrand}>
+              <span className={styles.footerBrandIcon}><CloudLightning size={15} /></span>
+              Cipher
+            </div>
+            <div className={styles.footerRight}>
+              <span className={styles.footerVersion}>v2.0</span>
+              <div className={styles.footerStatusGroup}>
+                <span className={styles.footerStatusText}>Connected</span>
+                <div className={styles.footerDot} />
+              </div>
             </div>
           </div>
         </div>
 
         {isMobile && (
           <BottomNav
-            tab={tab}
-            onTab={setTab}
+            tab={sbTab}
+            onTab={setSbTab}
             unread={totalUnread}
             onNewChat={onNewChat}
             onSettings={onSettings}
@@ -606,3 +594,47 @@ export default function Sidebar({
     </>
   )
 }
+
+function buildSidebarConversationView(
+  currentUserId: string | null,
+  id: string,
+  item: {
+    bundle: {
+      conversation: ConversationsRecord
+      members: ConversationMembersRecord[]
+    }
+    otherUser: UsersRecord | null
+    lastMessage: MessageBundle['message'] | null
+  },
+): SidebarConversationView {
+  const member =
+    (currentUserId
+      ? item.bundle.members.find((entry) => entry.user === currentUserId) ?? null
+      : null)
+
+  const updatedAt = Date.parse(item.lastMessage?.created ?? item.bundle.conversation.updated)
+
+  return {
+    id,
+    name: getConversationName({
+      source: item.bundle.conversation,
+      otherUser: item.otherUser,
+    }),
+    subtitle: item.otherUser?.email ?? item.bundle.conversation.description ?? '',
+    photo: item.bundle.conversation.type === 'group' ? '' : getUserAvatar(item.otherUser),
+    isGroup: item.bundle.conversation.type === 'group',
+    otherUid: item.otherUser?.id ?? null,
+    unread: 0,
+    starred: false,
+    pinned: false,
+    muted: !!member?.is_muted,
+    archived: !!item.bundle.conversation.is_archived,
+    updatedAt: Number.isFinite(updatedAt) ? updatedAt : 0,
+    lastMsg: getLastMessageText(item.lastMessage),
+    source: item.bundle.conversation,
+    member,
+    otherUser: item.otherUser,
+    lastMessage: item.lastMessage,
+  }
+}
+

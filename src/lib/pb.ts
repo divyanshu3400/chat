@@ -41,7 +41,7 @@ export const COLLECTIONS = {
     STORY_REACTIONS: 'story_reactions',
     STORY_REPLIES: 'story_replies',
     USER_PREF: 'user_preferences',
-    
+    USER_SETTINGS:'user_settings'
 } as const;
 
 

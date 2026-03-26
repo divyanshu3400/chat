@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { memo, useState, useCallback } from 'react'
 import styles from './FileBubble.module.css'
@@ -11,7 +11,6 @@ interface Props {
     mine: boolean
 }
 
-/* ── File type config ── */
 const FILE_TYPES: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pdf: {
         label: 'PDF',
@@ -95,7 +94,8 @@ export const FileBubble = memo(({ url, fileName, fileSize, mimeType, mine }: Pro
 
     const ft = getFileType(fileName, mimeType)
     const shortName = fileName ?? 'Unknown file'
-    const displayName = shortName.length > 32 ? shortName.substring(0, 29) + '…' : shortName
+    const displayName = shortName.length > 32 ? `${shortName.substring(0, 29)}...` : shortName
+    const mimeLabel = mimeType?.split('/')[1]?.replace(/[-_.]+/g, ' ')?.toUpperCase() ?? ft.label
 
     const download = useCallback(async () => {
         if (dlState !== 'idle') return
@@ -142,9 +142,9 @@ export const FileBubble = memo(({ url, fileName, fileSize, mimeType, mine }: Pro
             setTimeout(() => setDlState('idle'), 2500)
         }
     }, [url, fileName, dlState])
+
     return (
         <div className={`${styles.wrap} ${mine ? styles.mine : styles.theirs}`}>
-            {/* Icon column */}
             <div className={styles.iconCol}>
                 <div className={styles.iconWrap} style={{ '--ft-color': ft.color } as React.CSSProperties}>
                     <div className={styles.iconGlow} style={{ background: ft.color }} />
@@ -155,15 +155,13 @@ export const FileBubble = memo(({ url, fileName, fileSize, mimeType, mine }: Pro
                 </div>
             </div>
 
-            {/* Info column */}
             <div className={styles.info}>
                 <div className={styles.fileName} title={shortName}>{displayName}</div>
                 <div className={styles.meta}>
                     {fileSize && <span className={styles.metaChip}>{fileSize}</span>}
-                    {mimeType && <span className={styles.metaChip}>{mimeType.split('/')[1]?.toUpperCase()}</span>}
+                    <span className={styles.metaChip}>{mimeLabel}</span>
                 </div>
 
-                {/* Progress bar */}
                 {dlState === 'downloading' && (
                     <div className={styles.progressTrack}>
                         <div className={styles.progressFill} style={{ width: `${progress}%` }} />
@@ -171,7 +169,6 @@ export const FileBubble = memo(({ url, fileName, fileSize, mimeType, mine }: Pro
                     </div>
                 )}
 
-                {/* Action row */}
                 <div className={styles.actions}>
                     {dlState === 'idle' && (
                         <button onClick={download} className={`${styles.dlBtn} ${mine ? styles.dlBtnMine : styles.dlBtnTheirs}`}>
@@ -183,17 +180,17 @@ export const FileBubble = memo(({ url, fileName, fileSize, mimeType, mine }: Pro
                     )}
                     {dlState === 'downloading' && (
                         <span className={styles.statusChip}>
-                            <span className={styles.spinner} /> Downloading…
+                            <span className={styles.spinner} /> Downloading...
                         </span>
                     )}
                     {dlState === 'done' && (
                         <span className={`${styles.statusChip} ${styles.statusDone}`}>
-                            ✓ Saved
+                            Saved
                         </span>
                     )}
                     {dlState === 'error' && (
                         <span className={`${styles.statusChip} ${styles.statusError}`}>
-                            ⚠ Failed
+                            Failed
                         </span>
                     )}
                 </div>

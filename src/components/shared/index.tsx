@@ -109,7 +109,7 @@ export const IBtn = memo(({ children, onClick, title, active, danger, badge }: {
         onClick={onClick}
         title={title}
         style={{
-            width: 32, height: 32, borderRadius: 9, border: 'none', flexShrink: 0,
+            width: 28, height: 28, borderRadius: 9, border: 'none', flexShrink: 0,
             background: active ? 'var(--bg-elevated)' : 'transparent',
             color: danger ? 'var(--red)' : active ? 'var(--accent)' : 'var(--tx-muted)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

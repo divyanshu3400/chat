@@ -717,3 +717,170 @@
 .retryBtn:active {
     transform: scale(0.97);
 }
+:global([data-theme='light']) .emptyState {
+    background: linear-gradient(135deg,
+            rgba(250, 251, 253, 1) 0%,
+            rgba(244, 247, 251, 0.92) 48%,
+            rgba(250, 251, 253, 1) 100%);
+}
+
+:global([data-theme='light']) .emptyState::before {
+    background: radial-gradient(circle at 38% 32%,
+            rgba(14, 165, 233, 0.1) 0%,
+            rgba(15, 118, 110, 0.05) 38%,
+            transparent 72%);
+}
+
+:global([data-theme='light']) .emptyState::after {
+    background: radial-gradient(circle at 72% 66%,
+            rgba(59, 130, 246, 0.06) 0%,
+            transparent 58%);
+}
+
+:global([data-theme='light']) .glowRing {
+    border-color: rgba(14, 165, 233, 0.22);
+}
+
+:global([data-theme='light']) .emptyHeading h1 {
+    background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+:global([data-theme='light']) .emptySubtext {
+    color: #475569;
+}
+
+:global([data-theme='light']) .ctaBtnPrimary {
+    color: #ffffff;
+    box-shadow: 0 10px 28px rgba(15, 118, 110, 0.22);
+}
+
+:global([data-theme='light']) .ctaBtnPrimary:hover {
+    box-shadow: 0 14px 34px rgba(15, 118, 110, 0.28);
+}
+
+:global([data-theme='light']) .ctaBtnSecondary {
+    background: rgba(255, 255, 255, 0.86);
+    border-color: rgba(15, 23, 42, 0.1);
+    color: #334155;
+}
+
+:global([data-theme='light']) .ctaBtnSecondary:hover {
+    background: rgba(15, 118, 110, 0.08);
+    border-color: rgba(15, 118, 110, 0.28);
+    color: #0f766e;
+}
+
+:global([data-theme='light']) .featureCard {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 10px 24px rgba(148, 163, 184, 0.1);
+}
+
+:global([data-theme='light']) .featureCard:hover {
+    border-color: rgba(15, 118, 110, 0.24);
+    background: rgba(15, 118, 110, 0.08);
+}
+
+:global([data-theme='light']) .featureName {
+    color: #475569;
+}
+
+:global([data-theme='light']) .gestureHintOverlayDimmed {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+:global([data-theme='light']) .gestureText {
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.92),
+            rgba(248, 250, 252, 0.94));
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 12px 30px rgba(148, 163, 184, 0.16);
+}
+
+:global([data-theme='light']) .gestureTextPrimary {
+    color: #0f172a;
+}
+
+:global([data-theme='light']) .gestureTextSecondary {
+    color: #64748b;
+}
+
+:global([data-theme='light']) .dismissBtn {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(15, 23, 42, 0.08);
+    color: #64748b;
+}
+
+:global([data-theme='light']) .dismissBtn:hover {
+    background: rgba(15, 118, 110, 0.1);
+    border-color: rgba(15, 118, 110, 0.24);
+    color: #0f766e;
+}
+
+:global([data-theme='light']) .handIcon {
+    filter: drop-shadow(0 6px 14px rgba(15, 118, 110, 0.14));
+}
+
+:global([data-theme='light']) .fingerLine {
+    background: linear-gradient(to right,
+            rgba(14, 165, 233, 0.45),
+            rgba(14, 165, 233, 0));
+}
+
+:global([data-theme='light']) .dragIndicator {
+    background: linear-gradient(to right,
+            var(--ac),
+            rgba(15, 118, 110, 0));
+}
+
+:global([data-theme='light']) .spinnerCore {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme='light']) .loadingLabel {
+    color: #64748b;
+}
+
+:global([data-theme='light']) .skeletonRow {
+    background: rgba(255, 255, 255, 0.58);
+}
+
+:global([data-theme='light']) .skeletonAvatar,
+:global([data-theme='light']) .skeletonLine {
+    background: rgba(203, 213, 225, 0.5);
+}
+
+:global([data-theme='light']) .errorIcon {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.14);
+}
+
+:global([data-theme='light']) .errorTitle {
+    color: #0f172a;
+}
+
+:global([data-theme='light']) .errorMsg {
+    color: #64748b;
+}
+
+:global([data-theme='light']) .retryBtn {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(15, 23, 42, 0.1);
+    color: #334155;
+}
+
+:global([data-theme='light']) .retryBtn:hover {
+    border-color: rgba(15, 118, 110, 0.24);
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.06);
+}
+
+:global([data-theme='dark']) .emptyState {
+    background: linear-gradient(135deg,
+            rgba(11, 14, 26, 1) 0%,
+            rgba(15, 19, 32, 0.5) 50%,
+            rgba(11, 14, 26, 1) 100%);
+}

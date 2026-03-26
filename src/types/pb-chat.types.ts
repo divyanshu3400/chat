@@ -166,3 +166,31 @@ export interface MessageBundle {
   edits: MessageEditsRecord[];
   attachments: AttachmentsRecord[];
 }
+
+
+export type BubbleMessageView = {
+  uid: string
+  senderName: string
+  senderPhoto: string
+  text: string
+  type: string
+  url?: string
+  fileName?: string
+  fileSize?: string
+  encrypted: boolean
+  edited: boolean
+  editedAt?: string
+  deleted: boolean
+  duration?: string
+  replyTo?: {
+    id: string
+    text: string
+    senderName: string
+    type: string
+    mediaThumb?: string
+  }
+  thumbnailUrl?: string
+  ts: string
+  status: string
+  reactions: Record<string, string | null>
+}

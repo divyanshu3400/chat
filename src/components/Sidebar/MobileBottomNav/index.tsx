@@ -7,12 +7,13 @@ import {
   Bookmark,
   Settings2,
 } from 'lucide-react'
+import { SbTab } from '@/src/store/store'
 
 export type Tab = 'all' | 'groups' | 'starred' | 'dms' | 'unread'
 
 interface BottomNavProps {
   tab: Tab
-  onTab: (t: Tab) => void
+  onTab: (t: SbTab) => void
   unread: number
   onNewChat: () => void
   onSettings: () => void
@@ -24,7 +25,7 @@ interface NavItem {
   label: string
   badge?: number
   action?: () => void
-  isTab?: Tab
+  isTab?: SbTab
   isCenter?: boolean
 }
 
@@ -229,7 +230,7 @@ export const BottomNav = memo(({ tab, onTab, unread, onNewChat, onSettings }: Bo
 
           const isActive = item.isTab ? tab === item.isTab : false
           const handleTap = item.isTab
-            ? () => onTab(item.isTab as Tab)
+            ? () => onTab(item.isTab as SbTab)
             : item.action ?? (() => { })
 
           return (

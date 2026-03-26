@@ -1,4 +1,4 @@
-/* ImageBubble.module.css */
+﻿/* ImageBubble.module.css */
 @keyframes shimmerSweep {
     0% {
         background-position: -400px 0;
@@ -149,4 +149,34 @@
     font-size: 11px;
     color: var(--tx3, #55556a);
     font-family: var(--mono, monospace);
+}
+/* Premium media framing pass */
+.wrap {
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, rgba(255,255,255,.16) 76%, transparent);
+}
+
+.wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.1) 0%, transparent 34%);
+}
+
+.zoomHint,
+.durationBadge {
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 10px 22px rgba(0,0,0,.24);
+}
+
+@media (max-width: 639px) {
+    .wrap {
+        max-width: min(82vw, 330px);
+    }
+}
+
+:global([data-theme='light']) .wrap {
+    box-shadow: 0 20px 36px rgba(182, 194, 210, 0.26);
 }

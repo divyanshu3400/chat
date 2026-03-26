@@ -1,19 +1,14 @@
-/* FileBubble.module.css */
+﻿/* FileBubble.module.css */
+
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(3px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes progressFill {
-    from {
-        width: 0;
     }
 }
 
@@ -23,185 +18,165 @@
     }
 }
 
-@keyframes glowPulse {
-
-    0%,
-    100% {
-        opacity: 0.15;
-    }
-
-    50% {
-        opacity: 0.28;
-    }
-}
-
+/* ── Base wrap ── */
 .wrap {
     display: flex;
     align-items: flex-start;
-    gap: 13px;
-    padding: 13px 14px;
+    gap: 12px;
+    padding: 12px 14px;
     border-radius: 18px;
-    border: 1px solid transparent;
     max-width: 300px;
     position: relative;
-    overflow: hidden;
-    animation: fadeIn 0.26s ease both;
-    transition: box-shadow 0.18s, border-color 0.18s;
+    animation: fadeIn 0.18s ease both;
 }
 
-.wrap:hover {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-}
-
+/* ── Mine ── */
 .mine {
-    background: linear-gradient(135deg,
-            color-mix(in srgb, var(--ac, #8b5cf6) 22%, var(--bg2, #141420)) 0%,
-            var(--bg2, #141420) 100%);
-    border-color: color-mix(in srgb, var(--ac, #8b5cf6) 30%, transparent);
+    background: var(--ac, #6366f1);
     border-radius: 18px 4px 18px 18px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
+/* ── Theirs ── */
 .theirs {
-    background: var(--bg2, #141420);
-    border-color: var(--border2, rgba(255, 255, 255, 0.10));
+    background: var(--bg2, #1e1e2e);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
     border-radius: 4px 18px 18px 18px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
 }
 
-/* Subtle grain */
-.wrap::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* Icon column */
+/* ── Icon column ── */
 .iconCol {
     flex-shrink: 0;
-    position: relative;
-    z-index: 1;
 }
 
 .iconWrap {
-    width: 52px;
-    height: 58px;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--ft-color, #64748b) 12%, var(--bg1, #0d0d12));
-    border: 1px solid color-mix(in srgb, var(--ft-color, #64748b) 30%, transparent);
+    width: 48px;
+    height: 54px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s;
+    gap: 4px;
 }
 
-.iconWrap:hover {
-    transform: scale(1.04);
+.mine .iconWrap {
+    background: rgba(0, 0, 0, 0.18);
 }
 
-.iconGlow {
-    position: absolute;
-    inset: 0;
-    border-radius: 14px;
-    opacity: 0.12;
-    animation: glowPulse 3s ease infinite;
+.theirs .iconWrap {
+    background: color-mix(in srgb, var(--ft-color, #6366f1) 10%, var(--bg1, #13131f));
+    border: 1px solid color-mix(in srgb, var(--ft-color, #6366f1) 20%, transparent);
 }
 
 .iconSvg {
-    position: relative;
-    z-index: 1;
+    /* just the SVG icon */
 }
 
 .iconLabel {
-    position: relative;
-    z-index: 1;
     font-size: 8px;
-    font-weight: 900;
+    font-weight: 800;
     font-family: var(--mono, monospace);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
-/* Info column */
+.mine .iconLabel {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.theirs .iconLabel {
+    color: var(--ft-color, #6366f1);
+}
+
+/* ── Info column ── */
 .info {
     flex: 1;
     min-width: 0;
-    position: relative;
-    z-index: 1;
 }
 
 .fileName {
     font-size: 13px;
     font-weight: 600;
-    color: var(--tx, #f0f0f8);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    line-height: 1.35;
-    margin-bottom: 5px;
+    line-height: 1.3;
+    margin-bottom: 4px;
     letter-spacing: -0.01em;
 }
 
+.mine .fileName {
+    color: #fff;
+}
+
+.theirs .fileName {
+    color: var(--tx, #e8e8f0);
+}
+
+/* ── Meta chips ── */
 .meta {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin-bottom: 8px;
+    margin-bottom: 9px;
 }
 
 .metaChip {
-    background: var(--glass, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
     border-radius: 5px;
-    padding: 1px 6px;
+    padding: 2px 6px;
     font-size: 9.5px;
     font-weight: 600;
     font-family: var(--mono, monospace);
-    color: var(--tx3, #55556a);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
 }
 
-/* Progress */
+.mine .metaChip {
+    background: rgba(0, 0, 0, 0.18);
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.theirs .metaChip {
+    background: var(--bg1, rgba(0, 0, 0, 0.2));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+    color: var(--tx3, #6b7280);
+}
+
+/* ── Progress bar ── */
 .progressTrack {
-    height: 4px;
-    border-radius: 4px;
-    background: var(--glass, rgba(255, 255, 255, 0.08));
+    height: 3px;
+    border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 6px;
-    position: relative;
+    margin-bottom: 8px;
+}
+
+.mine .progressTrack {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.theirs .progressTrack {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .progressFill {
     height: 100%;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--ac, #8b5cf6), var(--green, #22d3a0));
+    border-radius: 3px;
     transition: width 0.2s ease;
-    box-shadow: 0 0 6px var(--ac, #8b5cf6);
 }
 
-.progressLabel {
-    position: absolute;
-    right: 0;
-    top: -16px;
-    font-size: 9px;
-    color: var(--tx3, #55556a);
-    font-family: var(--mono, monospace);
+.mine .progressFill {
+    background: rgba(255, 255, 255, 0.7);
 }
 
-/* Actions */
+.theirs .progressFill {
+    background: var(--ac, #6366f1);
+}
+
+/* ── Actions ── */
 .actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .dlBtn {
@@ -209,65 +184,109 @@
     align-items: center;
     gap: 5px;
     padding: 5px 12px;
-    border-radius: 9px;
+    border-radius: 8px;
     border: none;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: var(--font, 'Outfit', sans-serif);
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
-    transition: all 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: opacity 0.12s;
 }
 
-.dlBtnMine {
-    background: var(--glass, rgba(255, 255, 255, 0.12));
-    color: var(--tx, rgba(255, 255, 255, 0.9));
-    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
-}
-
-.dlBtnMine:hover {
-    background: var(--glass-hover, rgba(255, 255, 255, 0.2));
-    transform: translateY(-1px);
-}
-
-.dlBtnTheirs {
-    background: var(--ac-dim, rgba(139, 92, 246, 0.12));
-    color: var(--ac, #8b5cf6);
-    border: 1px solid var(--ac-glow, rgba(139, 92, 246, 0.3));
-}
-
-.dlBtnTheirs:hover {
-    background: color-mix(in srgb, var(--ac, #8b5cf6) 22%, transparent);
-    transform: translateY(-1px);
+.dlBtn:hover {
+    opacity: 0.8;
 }
 
 .dlBtn:active {
-    transform: scale(0.95) !important;
+    opacity: 0.6;
 }
 
+.dlBtnMine {
+    background: rgba(0, 0, 0, 0.22);
+    color: #fff;
+}
+
+.dlBtnTheirs {
+    background: color-mix(in srgb, var(--ac, #6366f1) 12%, transparent);
+    color: var(--ac, #6366f1);
+    border: 1px solid color-mix(in srgb, var(--ac, #6366f1) 25%, transparent);
+}
+
+/* ── Status ── */
 .statusChip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     font-size: 11px;
-    font-weight: 600;
-    font-family: var(--font, 'Outfit', sans-serif);
-    color: var(--tx3, #55556a);
+    font-weight: 500;
+    font-family: inherit;
+}
+
+.mine .statusChip {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.theirs .statusChip {
+    color: var(--tx3, #6b7280);
 }
 
 .statusDone {
-    color: var(--green, #22d3a0);
+    color: var(--green, #22c55e) !important;
 }
 
 .statusError {
-    color: var(--ac3, #f87171);
+    color: var(--red, #ef4444) !important;
 }
 
+/* ── Spinner ── */
 .spinner {
     width: 10px;
     height: 10px;
-    border: 1.5px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
-    border-top-color: var(--ac, #8b5cf6);
     border-radius: 50%;
     display: inline-block;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.75s linear infinite;
+}
+
+.mine .spinner {
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    border-top-color: rgba(255, 255, 255, 0.8);
+}
+
+.theirs .spinner {
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--ac, #6366f1);
+}
+
+/* ── Responsive ── */
+@media (max-width: 639px) {
+    .wrap {
+        max-width: min(86vw, 300px);
+    }
+
+    .fileName {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+}
+
+/* ── Light mode ── */
+:global([data-theme='light']) .theirs {
+    background: #f4f4f8;
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme='light']) .theirs .fileName {
+    color: #111;
+}
+
+:global([data-theme='light']) .theirs .metaChip {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #6b7280;
+}
+
+:global([data-theme='light']) .theirs .iconWrap {
+    background: color-mix(in srgb, var(--ft-color, #6366f1) 8%, #fff);
 }

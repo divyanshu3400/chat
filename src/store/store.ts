@@ -27,7 +27,7 @@ import type {
 } from '@/src/types/pb-collections.types'
 // import { type Prefs, DEFAULT_PREFS } from '@/src/types'
 
-export type SbTab = 'all' | 'dms' | 'groups' | 'starred' | 'unread'
+export type SbTab = 'all' | 'groups' | 'starred' | 'unread'
 
 const chatService = createChatService(pb)
 export const DEFAULT_PREFS: Prefs = {

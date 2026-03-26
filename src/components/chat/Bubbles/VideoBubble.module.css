@@ -1,4 +1,4 @@
-/* VideoBubble.module.css */
+﻿/* VideoBubble.module.css */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -177,4 +177,34 @@
     color: rgba(255, 255, 255, 0.92);
     font-family: var(--mono, monospace);
     letter-spacing: 0.02em;
+}
+/* Premium media framing pass */
+.wrap {
+    border-radius: 20px;
+    border: 1px solid color-mix(in srgb, rgba(255,255,255,.16) 76%, transparent);
+}
+
+.wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.1) 0%, transparent 34%);
+}
+
+.zoomHint,
+.durationBadge {
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 10px 22px rgba(0,0,0,.24);
+}
+
+@media (max-width: 639px) {
+    .wrap {
+        max-width: min(82vw, 330px);
+    }
+}
+
+:global([data-theme='light']) .wrap {
+    box-shadow: 0 20px 36px rgba(182, 194, 210, 0.26);
 }

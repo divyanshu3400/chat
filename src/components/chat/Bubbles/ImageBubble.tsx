@@ -1,6 +1,6 @@
-'use client'
+﻿'use client'
 
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import styles from './ImageBubble.module.css'
 
 interface Props {
@@ -15,14 +15,26 @@ export const ImageBubble = memo(({ url, width, height, mine, onLightbox }: Props
     const [loaded, setLoaded] = useState(false)
     const [errored, setErrored] = useState(false)
 
-    // Compute aspect ratio — clamp between 0.5 (portrait) and 2 (landscape)
-    const rawRatio = width && height ? width / height : 1.6
-    const ratio = Math.min(Math.max(rawRatio, 0.5), 2)
-    const paddingTop = `${(1 / ratio) * 100}%`
+    const { paddingTop, maxWidth } = useMemo(() => {
+        const rawRatio = width && height ? width / height : 1.6
+        const ratio = Math.min(Math.max(rawRatio, 0.5), 2)
+        const aspect = rawRatio < 0.82 ? 'portrait' : rawRatio > 1.38 ? 'landscape' : 'square'
+        const nextMaxWidth = aspect === 'portrait'
+            ? 'min(58vw, 250px)'
+            : aspect === 'landscape'
+                ? 'min(78vw, 360px)'
+                : 'min(68vw, 300px)'
+
+        return {
+            paddingTop: `${(1 / ratio) * 100}%`,
+            maxWidth: nextMaxWidth,
+        }
+    }, [height, width])
 
     return (
         <div
             className={`${styles.wrap} ${mine ? styles.mine : styles.theirs}`}
+            style={{ maxWidth }}
             onClick={() => !errored && onLightbox(url, 'image')}
             role="button"
             tabIndex={0}
@@ -33,11 +45,10 @@ export const ImageBubble = memo(({ url, width, height, mine, onLightbox }: Props
                 {!loaded && !errored && <div className={styles.shimmer} />}
                 {errored ? (
                     <div className={styles.error}>
-                        <span className={styles.errorIcon}>⚠</span>
+                        <span className={styles.errorIcon}>!</span>
                         <span className={styles.errorText}>Failed to load</span>
                     </div>
                 ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={url}
                         alt=""

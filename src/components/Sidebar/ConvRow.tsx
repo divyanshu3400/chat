@@ -69,7 +69,7 @@ export const ConvRow = memo(({ cid, conv, isActive, isOnline, focused, onOpen, o
             {isActive && <div className={styles.convActiveBar} />}
 
             <div className={styles.avatarWrap}>
-                <Avatar name={name} photo={photo} size={46} isGroup={conv.isGroup} />
+                <Avatar name={name} photo={photo} size={26} isGroup={conv.isGroup} />
                 {!conv.isGroup && (
                     <div className={`${styles.presenceDot} ${isOnline ? styles.presenceDotOnline : styles.presenceDotOffline}`} />
                 )}
@@ -88,7 +88,7 @@ export const ConvRow = memo(({ cid, conv, isActive, isOnline, focused, onOpen, o
                 </div>
                 <div className={styles.convPreviewRow}>
                     <span className={styles.convPreview}>
-                        <span className={styles.lockIcon}><Lock /></span>
+                        <span className={styles.lockIcon}><Lock className='lockIcon' size={10} /></span>
                         <span className={styles.previewText}>{preview}</span>
                     </span>
                     <div className={styles.convMeta}>

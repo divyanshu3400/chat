@@ -1,4 +1,4 @@
-import type { PocketBaseClient } from './pb-client';
+﻿import type { PocketBaseClient } from './pb-client';
 import { createCollectionServiceMap } from './pb-base.service';
 
 export type PocketBaseServiceRegistry = ReturnType<typeof createCollectionServiceMap>;
@@ -6,3 +6,6 @@ export type PocketBaseServiceRegistry = ReturnType<typeof createCollectionServic
 export function createPocketBaseServices(client: PocketBaseClient): PocketBaseServiceRegistry {
   return createCollectionServiceMap(client);
 }
+
+export { PocketBaseStoryService, createStoryService } from './pb-story.service';
+
